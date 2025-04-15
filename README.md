@@ -1,15 +1,6 @@
-# Welcome to the On-Orbit Collision Predictor! 🚀
+# Welcome to the Satellite Conjunction Risk Assessment System! 🚀
 
-In this project, our team was commissioned by the Canadian Space Agency to develop a predictive system for on-orbit satellite collision risks. This tool helps assess potential orbital collisions using a blend of machine learning and advanced statistical models. The system allows users to input satellite data, calculate collision probabilities, and manage prediction reports. It's designed for space agencies, satellite operators, and researchers to improve decision-making and avoid costly or dangerous on-orbit collisions.
-
-## 🧠 The Team:
-
-| Member            | Position           | Responsibilities                   |
-| ----------------- | ------------------ | ---------------------------------- |
-| **Erik Cupsa**    | Full Stack + ML     | Authentication|
-| **Yassine Mimet** | Back End            | Collision Calculations, Data Processing |
-| **Wasif Somji**   | Full Stack          | API Development, Backend Architecture|
-| **Masa Kagami**   | Front End + ML      | UI/UX design + Highcharts integration|
+This tool helps assess potential orbital collisions using a blend of machine learning and advanced statistical models. The system allows users to input satellite data, calculate collision probabilities, and manage prediction reports. It's designed for space agencies, satellite operators, and researchers to improve decision-making and avoid costly or dangerous on-orbit collisions.
 
 ## 🚀 Key Features
 
@@ -31,12 +22,12 @@ In this project, our team was commissioned by the Canadian Space Agency to devel
 - **Backend**: Django
 - **Machine Learning**: MATLAB for initial calculations, Python (scikit-learn) for machine learning model development
 - **Frontend**: Next.js with D3 for 3D visualization
-- **Database**: PostgreSQL hosted on Supabase
+- **Database**: SQLite (local development) / PostgreSQL (production)
 
 ## 📂 Project Structure
 
 ```plaintext
-On-Orbit-Collision-Predictor/
+Satellite-Conjunction-Risk-Assessment/
 │
 ├── on-orbit-frontend/             # Next.js frontend
 │
@@ -56,16 +47,16 @@ On-Orbit-Collision-Predictor/
 - **Python 3.10+** (but less than 3.13) and **Django** for the backend to run **MATLAB**
 - **Node.js** and **npm** for the Next.js frontend
 - **MATLAB** for initial prediction calculations (optional for extended functionality)
-- **PostgreSQL** for database management
-- **Supabase** for hosted database setup
+- **SQLite** is included for local development
+- **PostgreSQL** for production database (optional)
 
 ### Setup
 
 1. **Clone the Repository**
 
    ```bash
-   git clone https://github.com/Erik-Cupsa/On-Orbit-Collision-Predictor.git
-   cd on-orbit-collision-predictor
+   git clone https://github.com/Erik-Cupsa/Satellite-Conjunction-Risk-Assessment.git
+   cd Satellite-Conjunction-Risk-Assessment
    ```
 
 2. **Install Dependencies**
@@ -85,9 +76,9 @@ On-Orbit-Collision-Predictor/
      npm install
      ```
 
-3. **Database Setup** (in progress)
+3. **Database Setup**
 
-   We're using Supabase for this. Configure the database settings in your .env file. Reference the .env.example file if needed.
+   SQLite is configured by default for local development. No additional setup is required.
 
 4. **Inputting CDMs**  
 
