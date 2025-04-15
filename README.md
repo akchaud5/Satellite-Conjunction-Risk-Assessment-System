@@ -1,6 +1,8 @@
 # Welcome to the Satellite Conjunction Risk Assessment System! 🚀
 
-This tool helps assess potential orbital collisions using a blend of machine learning and advanced statistical models. The system allows users to input satellite data, calculate collision probabilities, and manage prediction reports. It's designed for space agencies, satellite operators, and researchers to improve decision-making and avoid costly or dangerous on-orbit collisions.
+This tool helps assess potential orbital collisions using a blend of orbital mechanics and advanced statistical models. The system allows users to visualize satellite orbits, calculate collision probabilities, and analyze Conjunction Data Messages (CDMs). It's designed for space agencies, satellite operators, and researchers to improve decision-making and avoid costly or dangerous on-orbit collisions.
+
+![Orbit Visualization](https://i.imgur.com/4P2g6HO.png)
 
 ## 🚀 Key Features
 
@@ -19,10 +21,13 @@ This tool helps assess potential orbital collisions using a blend of machine lea
 
 ## 🛠️ Tech Stack
 
-- **Backend**: Django
-- **Machine Learning**: MATLAB for initial calculations, Python (scikit-learn) for machine learning model development
-- **Frontend**: Next.js with D3 for 3D visualization
+- **Backend**: Django with Django REST Framework
+- **Orbit Mechanics**: MATLAB integration via MATLAB Engine for Python
+- **Scientific Computing**: NumPy, SciPy, Pandas
+- **Frontend**: Next.js (React) with TypeScript and Tailwind CSS 
+- **Visualization**: D3.js for globe rendering, Satellite.js for orbit calculations
 - **Database**: SQLite (local development) / PostgreSQL (production)
+- **Authentication**: JWT for secure API access
 
 ## 📂 Project Structure
 
@@ -44,9 +49,10 @@ Satellite-Conjunction-Risk-Assessment/
 
 ### Prerequisites
 
-- **Python 3.10+** (but less than 3.13) and **Django** for the backend to run **MATLAB**
+- **Python 3.10-3.12** (MATLAB Engine supports up to 3.12) for the backend
 - **Node.js** and **npm** for the Next.js frontend
-- **MATLAB** for initial prediction calculations (optional for extended functionality)
+- **MATLAB R2024b** for orbital calculations (required for full functionality)
+- **Java JRE 11** (Amazon Corretto 11 recommended for Apple Silicon)
 - **SQLite** is included for local development
 - **PostgreSQL** for production database (optional)
 
@@ -64,9 +70,16 @@ Satellite-Conjunction-Risk-Assessment/
    - **Backend**: Set up and activate the virtual environment, then install Django and other requirements.
 
      ```bash
-     python3 -m venv env
-     source env/bin/activate
+     python3 -m venv env_py312
+     source env_py312/bin/activate
      pip install -r requirements.txt
+     ```
+
+   - **MATLAB Engine**: Install the MATLAB Engine for Python (after installing MATLAB R2024b).
+
+     ```bash
+     cd /Applications/MATLAB_R2024b.app/extern/engines/python
+     python setup.py install
      ```
 
    - **Frontend**: Navigate to the `on-orbit-frontend` folder and install dependencies.
@@ -111,25 +124,43 @@ Satellite-Conjunction-Risk-Assessment/
    }`
 
 
-6. **Run DB Migrations**
+6. **Run DB Migrations and Load Sample Data**
 
-   If you modify the schema:
+   Set up the database and load sample data:
 
    ```bash
    cd Orbit_Predictor-BackEnd
-   python manage.py makemigrations
    python manage.py migrate
+   python manage.py seed_cdm_data --file api/sample_data/oct5_data/cdm0.json
+   python manage.py seed_cdm_data --file api/sample_data/oct5_data/cdm1.json
+   python manage.py seed_cdm_data --file api/sample_data/oct5_data/cdm2.json
    ```
 
 ### Running the Project
 
-To run both the Django backend and the Next.js frontend concurrently:
+Run the backend and frontend in separate terminal windows:
 
-```bash
-npm run dev
-```
+1. **Start the Django backend**:
+   ```bash
+   cd Orbit_Predictor-BackEnd
+   source ../env_py312/bin/activate
+   python manage.py runserver
+   ```
 
-This command will start:
+2. **Start the Next.js frontend** (in another terminal):
+   ```bash
+   cd on-orbit-frontend
+   npm run dev
+   ```
+
+This will start:
 - **Next.js frontend** at `http://localhost:3000`
 - **Django backend** at `http://localhost:8000`
+
+### Using the Visualization
+
+1. Create an account and log in
+2. Navigate to "Visualization" in the sidebar
+3. Select satellites from the dropdown menus (e.g., ISS - 25544 and NOAA-20 - 43013)
+4. Click "View Orbital Trajectories" to see the 3D visualization
 
