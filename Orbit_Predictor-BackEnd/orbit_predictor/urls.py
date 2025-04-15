@@ -16,8 +16,24 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import include, path
+from django.http import JsonResponse, HttpResponseRedirect
+
+def api_root(request):
+    """Root URL view that provides information about the API"""
+    return JsonResponse({
+        "message": "Welcome to the Satellite Conjunction Risk Assessment System API",
+        "version": "1.0",
+        "endpoints": {
+            "API Root": "/api/",
+            "Login": "/api/login/",
+            "Register": "/api/register/",
+            "CDMs": "/api/cdms/",
+            "Collision Data": "/api/collisions/"
+        }
+    })
 
 urlpatterns = [
     # path('admin/', admin.site.urls),
+    path('', api_root, name='api_root'),  # Root URL handler
     path('api/', include('api.urls')), 
 ]
