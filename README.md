@@ -60,7 +60,7 @@ Satellite-Conjunction-Risk-Assessment/
 1. **Clone the Repository**
 
    ```bash
-   git clone https://github.com/Erik-Cupsa/Satellite-Conjunction-Risk-Assessment.git
+   git clone https://github.com/akchaud5/Satellite-Conjunction-Risk-Assessment.git
    cd Satellite-Conjunction-Risk-Assessment
    ```
 
