@@ -76,3 +76,28 @@ python manage.py update_cdm_dates --reference-date 2024-10-05
 - After loading sample/demo data that has outdated timestamps
 - Before demonstrations to make conjunction events appear to be upcoming
 - To test time-based features with current dates instead of past/future dates
+
+### Fix Timezone Issues
+
+Fixes timezone-related issues by shifting all CDM dates by a specific number of hours. Particularly useful for correcting dates that appear to be one day in the future due to timezone conversions.
+
+**Usage:**
+
+```bash
+# Dry run (show what would change without actually changing)
+python manage.py fix_timezone --dry-run
+
+# Fix dates that appear one day in the future (default: shifts by -24 hours)
+python manage.py fix_timezone
+
+# Shift by a custom number of hours
+python manage.py fix_timezone --hours -12
+```
+
+**How it works:**
+1. Shifts all CDM dates (creation_date and TCA) by the specified number of hours
+2. By default, shifts dates back by 24 hours to fix dates appearing one day in the future
+
+**When to use:**
+- When CDM dates appear to be in the future due to timezone issues
+- To adjust date/time displays to match a specific timezone for demonstration purposes
