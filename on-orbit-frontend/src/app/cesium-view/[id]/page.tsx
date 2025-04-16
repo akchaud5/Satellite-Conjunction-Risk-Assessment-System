@@ -104,6 +104,8 @@ export default function OrbitVisualizationPage() {
       
       console.log(`Successfully fetched TLE data for ${objectDesignator} from ${data.source}`);
       console.log(`Satellite name: ${name}`);
+      console.log(`TLE Data Source: ${data.source}`);
+      console.log(`Complete TLE Data Response:`, data);
       
       return [name, tleLine1, tleLine2];
     } catch (error) {
