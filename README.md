@@ -163,9 +163,13 @@ This will start:
 3. Select satellites from the dropdown menus (e.g., ISS - 25544 and NOAA-20 - 43013)
 4. Click "View Orbital Trajectories" to see the 3D visualization
 
-### Maintaining Satellite Data
+### Maintaining Data Quality
 
-The system includes tools to ensure data quality by checking for inactive satellites:
+The system includes several tools to ensure data quality:
+
+#### Check Inactive Satellites
+
+Verify and remove CDMs with satellites that are no longer in orbit:
 
 ```bash
 # Check for inactive satellites (dry run - no changes made)
@@ -178,4 +182,20 @@ python manage.py check_inactive_satellites
 ```
 
 This feature uses TLE (Two-Line Element) data from multiple sources to verify if a satellite is still in orbit, helping maintain a clean and accurate database.
+
+#### Update CDM Dates
+
+Make conjunction events appear current by updating their timestamps:
+
+```bash
+# Preview date changes without modifying the database
+cd Orbit_Predictor-BackEnd
+source ../env_py312/bin/activate
+python manage.py update_cdm_dates --dry-run
+
+# Update all CDM dates to be current
+python manage.py update_cdm_dates
+```
+
+This is particularly useful for demonstrations and testing, as it makes past or future-dated conjunction events appear to be happening now.
 

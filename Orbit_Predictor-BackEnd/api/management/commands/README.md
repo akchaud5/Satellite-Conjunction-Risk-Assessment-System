@@ -46,3 +46,33 @@ python manage.py seed_cdm_data --file path/to/cdm/file.json
 **Notes:**
 - File must be in the proper CDM JSON format
 - Any satellites listed in the imported data should be verified active using the check_inactive_satellites command
+
+### Update CDM Dates
+
+Updates the dates for all CDM entries to be relative to the current time. Useful for demonstration purposes to make CDMs appear recent/current instead of showing past or future dates.
+
+**Usage:**
+
+```bash
+# Dry run (show what would change without actually changing)
+python manage.py update_cdm_dates --dry-run
+
+# Update all CDM dates to be current (shifts from earliest CDM to now)
+python manage.py update_cdm_dates
+
+# Update with a specific number of days shift
+python manage.py update_cdm_dates --days 3
+
+# Update with reference to a specific start date
+python manage.py update_cdm_dates --reference-date 2024-10-05
+```
+
+**How it works:**
+1. Identifies the reference date (either the earliest CDM date or a specified date)
+2. Calculates the time shift needed to bring that date to the current time
+3. Applies the same time shift to all CDM dates (creation_date and TCA)
+
+**When to use:**
+- After loading sample/demo data that has outdated timestamps
+- Before demonstrations to make conjunction events appear to be upcoming
+- To test time-based features with current dates instead of past/future dates
