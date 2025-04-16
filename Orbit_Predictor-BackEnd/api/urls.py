@@ -4,7 +4,8 @@ from .views import (
     CollisionListCreateView, CollisionDetailView, UserViewSet,
     ProbabilityCalcListCreateView, ProbabilityCalcDetailView,
     CDMSerializerListCreateView, CDMCalcDetailView, RegisterView, LoginView, CDMViewSet, RefreshTokenView, CDMCreateView, OrganizationViewSet,
-    CollisionTradespaceView, CollisionLinearTradespaceView, CurrentUserView, CDMPrivacyToggleView, UserNotificationToggleView
+    CollisionTradespaceView, CollisionLinearTradespaceView, CurrentUserView, CDMPrivacyToggleView, UserNotificationToggleView,
+    TleProxyView
 )
 
 router = DefaultRouter()
@@ -28,5 +29,6 @@ urlpatterns = [
     path('refresh/', RefreshTokenView.as_view(), name='refresh_token'),
     path('users/current_user/', CurrentUserView.as_view(), name='current_user'),
     path('users/notifications/', UserNotificationToggleView.as_view(), name='user-notification-toggle'),
+    path('tle/<str:norad_id>/', TleProxyView.as_view(), name='tle-proxy'),
     path('', include(router.urls)),
 ]

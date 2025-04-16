@@ -67,70 +67,93 @@ export default function OrbitVisualizationPage() {
     }
   }, [id]);
 
-  // Function to provide TLE data for visualization
+  // Function to fetch TLE data via our backend proxy
   const fetchTleFromCelesTrak = async (
     objectDesignator: string
   ): Promise<string[]> => {
     console.log(`Getting TLE data for satellite: ${objectDesignator}`);
     
-    // Skip network requests that will likely fail due to CORS
-    // and directly use demonstration TLE data
-    
-    // Use appropriate demo orbits based on satellite type to create more realistic visualization
-    let demoTle: string[];
-    
-    // Determine satellite type from designator to provide more realistic orbit
-    if (objectDesignator === "25544") {
-      // ISS - Low Earth Orbit
-      demoTle = [
-        `ISS (ZARYA) [DEMO]`,
-        "1 25544U 98067A   23136.55998435  .00010491  00000+0  19297-3 0  9994",
-        "2 25544  51.6412 238.8846 0006203  86.3288 273.8410 15.50132295345582"
-      ];
-    } else if (objectDesignator.startsWith("4")) {
-      // Starlink-like orbit
-      demoTle = [
-        `STARLINK [DEMO] ${objectDesignator}`,
-        "1 44932U 19074A   23135.53046881  .00009706  00000+0  61808-4 0  9994",
-        "2 44932  53.0504  59.9061 0001038  89.1133 270.9984 15.06390133156550"
-      ];
-    } else if (objectDesignator === "20580") {
-      // Hubble-like orbit
-      demoTle = [
-        `HUBBLE [DEMO]`,
-        "1 20580U 90037B   23136.29579028  .00000612  00000+0  32151-4 0  9992",
-        "2 20580  28.4698 287.8908 0002449 156.5490 203.5557 15.09819891423633"
-      ];
-    } else if (objectDesignator.startsWith("3")) {
-      // NOAA-like orbit
-      demoTle = [
-        `NOAA [DEMO] ${objectDesignator}`,
-        "1 33591U 09005A   23135.50377627  .00000039  00000+0  51303-4 0  9992",
-        "2 33591  99.1286 139.9440 0014096  92.7583 267.5211 14.12514767732624"
-      ];
-    } else {
-      // Generic Low Earth Orbit for other satellites
-      demoTle = [
-        `DEMO_ORBIT_${objectDesignator}`,
-        "1 99999U 98067A   23136.55998435  .00010491  00000+0  19297-3 0  9994",
-        "2 99999  51.6412 238.8846 0006203  86.3288 273.8410 15.50132295345582"
-      ];
-    }
-    
-    console.log(`Using demo TLE data for visualization: ${demoTle[0]}`);
-    return demoTle;
-    
-    // NOTE: Network requests have been commented out due to CORS issues
-    // In a production environment, these would be enabled and properly configured
-    /*
     try {
-      // API requests would go here in a production environment
-      // with appropriate CORS configuration
+      // Get auth token
+      const accessToken = localStorage.getItem('token');
+      if (!accessToken) {
+        throw new Error("Authentication required");
+      }
+      
+      // Use our backend proxy to avoid CORS issues
+      const response = await fetch(
+        `http://localhost:8000/api/tle/${objectDesignator}/`,
+        {
+          headers: {
+            "Authorization": `Bearer ${accessToken}`,
+            "Content-Type": "application/json"
+          }
+        }
+      );
+      
+      if (!response.ok) {
+        throw new Error(`TLE fetch failed: ${response.status} ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      
+      // Format the TLE data as expected by the orbit propagator
+      const tleLine1 = data.line1;
+      const tleLine2 = data.line2;
+      const name = data.name;
+      
+      console.log(`Successfully fetched TLE data for ${objectDesignator} from ${data.source}`);
+      console.log(`Satellite name: ${name}`);
+      
+      return [name, tleLine1, tleLine2];
     } catch (error) {
       console.error(`Error fetching TLE data: ${error}`);
+      
+      // Fallback to built-in demo data if the proxy fails
+      console.log(`Falling back to built-in demo data for ${objectDesignator}`);
+      
+      // Use appropriate demo orbits based on satellite type
+      let demoTle: string[];
+      
+      if (objectDesignator === "25544") {
+        // ISS - Low Earth Orbit
+        demoTle = [
+          `ISS (ZARYA) [LOCAL FALLBACK]`,
+          "1 25544U 98067A   23136.55998435  .00010491  00000+0  19297-3 0  9994",
+          "2 25544  51.6412 238.8846 0006203  86.3288 273.8410 15.50132295345582"
+        ];
+      } else if (objectDesignator.startsWith("4")) {
+        // Starlink-like orbit
+        demoTle = [
+          `STARLINK [LOCAL FALLBACK] ${objectDesignator}`,
+          "1 44932U 19074A   23135.53046881  .00009706  00000+0  61808-4 0  9994",
+          "2 44932  53.0504  59.9061 0001038  89.1133 270.9984 15.06390133156550"
+        ];
+      } else if (objectDesignator === "20580") {
+        // Hubble-like orbit
+        demoTle = [
+          `HUBBLE [LOCAL FALLBACK]`,
+          "1 20580U 90037B   23136.29579028  .00000612  00000+0  32151-4 0  9992",
+          "2 20580  28.4698 287.8908 0002449 156.5490 203.5557 15.09819891423633"
+        ];
+      } else if (objectDesignator.startsWith("3")) {
+        // NOAA-like orbit
+        demoTle = [
+          `NOAA [LOCAL FALLBACK] ${objectDesignator}`,
+          "1 33591U 09005A   23135.50377627  .00000039  00000+0  51303-4 0  9992",
+          "2 33591  99.1286 139.9440 0014096  92.7583 267.5211 14.12514767732624"
+        ];
+      } else {
+        // Generic Low Earth Orbit for other satellites
+        demoTle = [
+          `DEMO_ORBIT_${objectDesignator}`,
+          "1 99999U 98067A   23136.55998435  .00010491  00000+0  19297-3 0  9994",
+          "2 99999  51.6412 238.8846 0006203  86.3288 273.8410 15.50132295345582"
+        ];
+      }
+      
       return demoTle;
     }
-    */
   };
 
   // Function to propagate orbit using satellite.js with orbit limiting
