@@ -163,3 +163,19 @@ This will start:
 3. Select satellites from the dropdown menus (e.g., ISS - 25544 and NOAA-20 - 43013)
 4. Click "View Orbital Trajectories" to see the 3D visualization
 
+### Maintaining Satellite Data
+
+The system includes tools to ensure data quality by checking for inactive satellites:
+
+```bash
+# Check for inactive satellites (dry run - no changes made)
+cd Orbit_Predictor-BackEnd
+source ../env_py312/bin/activate
+python manage.py check_inactive_satellites --dry-run
+
+# Remove CDMs with inactive satellites
+python manage.py check_inactive_satellites
+```
+
+This feature uses TLE (Two-Line Element) data from multiple sources to verify if a satellite is still in orbit, helping maintain a clean and accurate database.
+
