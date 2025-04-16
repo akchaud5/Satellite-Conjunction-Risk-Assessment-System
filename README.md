@@ -2,7 +2,6 @@
 
 This tool helps assess potential orbital collisions using a blend of orbital mechanics and advanced statistical models. The system allows users to visualize satellite orbits, calculate collision probabilities, and analyze Conjunction Data Messages (CDMs). It's designed for space agencies, satellite operators, and researchers to improve decision-making and avoid costly or dangerous on-orbit collisions.
 
-![Orbit Visualization](https://i.imgur.com/4P2g6HO.png)
 
 ## 🚀 Key Features
 
