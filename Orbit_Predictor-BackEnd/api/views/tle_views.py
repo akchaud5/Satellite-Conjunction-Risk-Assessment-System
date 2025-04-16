@@ -26,11 +26,12 @@ class TleProxyView(APIView):
         
         # Try multiple sources for TLE data
         sources = [
-            # NASA's TLE API
+            # NASA's TLE API 
             {
                 "url": f"https://tle.ivanstanojevic.me/api/tle/{norad_id}",
                 "headers": {
                     "Accept": "application/json",
+                    "User-Agent": "SatelliteCollisionPredictor/1.0",
                     "X-Api-Key": NASA_API_KEY
                 },
                 "parser": self._parse_nasa_response
@@ -45,20 +46,55 @@ class TleProxyView(APIView):
         
         for source in sources:
             try:
-                logger.info(f"Attempting to fetch TLE data from {source['url']}")
+                print(f"DEBUG: Attempting to fetch TLE data from {source['url']}")
+                print(f"DEBUG: Headers: {source['headers']}")
                 response = requests.get(
                     source["url"],
                     headers=source["headers"],
                     timeout=5  # 5 second timeout
                 )
                 
+                print(f"DEBUG: Response status: {response.status_code}")
+                print(f"DEBUG: Response headers: {response.headers}")
+                
                 if response.status_code == 200:
+                    print(f"DEBUG: Response content (first 200 chars): {response.text[:200]}")
                     parsed_data = source["parser"](response)
                     if parsed_data:
+                        print(f"DEBUG: Successfully parsed data from {source['url']}")
+                        print(f"DEBUG: Parsed data: {parsed_data}")
                         return Response(parsed_data)
             
             except Exception as e:
-                logger.error(f"Error fetching TLE data: {str(e)}")
+                print(f"DEBUG: Error fetching TLE data from {source['url']}: {str(e)}")
+                # Specific handling for the NASA API which sometimes has connection issues
+                if "tle.ivanstanojevic.me" in source["url"]:
+                    try:
+                        # Try a direct fetch with minimal error handling
+                        import urllib.request
+                        req = urllib.request.Request(
+                            source["url"],
+                            headers=source["headers"]
+                        )
+                        with urllib.request.urlopen(req, timeout=5) as response:
+                            data = response.read().decode("utf-8")
+                            # Check if it looks like valid JSON
+                            if '{"@context":' in data and '"line1":' in data and '"line2":' in data:
+                                print(f"DEBUG: Successfully retrieved TLE data using urllib")
+                                import json
+                                tle_data = json.loads(data)
+                                parsed_data = {
+                                    "name": tle_data.get("name", f"Satellite {tle_data.get('satelliteId')}"),
+                                    "line1": tle_data["line1"],
+                                    "line2": tle_data["line2"],
+                                    "source": "nasa_api_direct"
+                                }
+                                print(f"DEBUG: Parsed NASA data: {parsed_data}")
+                                return Response(parsed_data)
+                    except Exception as inner_e:
+                        print(f"DEBUG: Secondary fetch attempt also failed: {str(inner_e)}")
+                
+                # Continue to next source if both attempts fail
                 continue
         
         # If all sources fail, return demo data
