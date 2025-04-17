@@ -209,8 +209,19 @@ def assess_collision_risk(cdm_id, model_id=None):
         
         # Get probability scores if available
         if hasattr(model, 'predict_proba'):
-            risk_probabilities = model.predict_proba(X)[0].tolist()
-            risk_score = float(risk_probabilities[1])  # Probability of high risk
+            proba_array = model.predict_proba(X)[0]
+            risk_probabilities = proba_array.tolist()
+            
+            # Handle case where we might only have probabilities for one class
+            if len(risk_probabilities) > 1:
+                # We have both classes, use probability of high risk (class 1)
+                risk_score = float(risk_probabilities[1])
+            else:
+                # We only have one class, use the single probability
+                risk_score = float(risk_probabilities[0])
+                # Determine if this is probability of class 0 or class 1
+                if risk_class == 0:  # If predicted class is 0
+                    risk_score = 1.0 - risk_score  # Probability of class 1 is inverse
         else:
             risk_score = float(risk_class)
             risk_probabilities = None

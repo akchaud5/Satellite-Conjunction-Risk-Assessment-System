@@ -344,14 +344,30 @@ def train_risk_classifier(
         
         # Generate predictions
         y_pred = model.predict(X_test_norm)
-        y_pred_prob = model.predict_proba(X_test_norm)[:, 1] if hasattr(model, 'predict_proba') else None
+        
+        # Safely extract prediction probabilities if available
+        if hasattr(model, 'predict_proba'):
+            y_pred_proba = model.predict_proba(X_test_norm)
+            # Check if we have probabilities for both classes (0 and 1)
+            if y_pred_proba.shape[1] > 1:
+                y_pred_prob = y_pred_proba[:, 1]  # Second column is prob of class 1
+            else:
+                # Handle case where we only have one class in training data
+                y_pred_prob = y_pred_proba[:, 0]  # Use the only column available
+        else:
+            y_pred_prob = None
         
         # Calculate metrics
         accuracy = accuracy_score(y_test, y_pred)
         precision = precision_score(y_test, y_pred, zero_division=0)
         recall = recall_score(y_test, y_pred, zero_division=0)
         f1 = f1_score(y_test, y_pred, zero_division=0)
-        auc = roc_auc_score(y_test, y_pred_prob) if y_pred_prob is not None else None
+        
+        # Only calculate AUC if we have both classes and valid probabilities
+        if y_pred_prob is not None and len(np.unique(y_test)) > 1:
+            auc = roc_auc_score(y_test, y_pred_prob)
+        else:
+            auc = None
         
         # Confusion matrix
         cm = confusion_matrix(y_test, y_pred)
@@ -411,21 +427,29 @@ def train_risk_classifier(
         training_job.completed_at = datetime.now()
         training_job.training_data_count = len(X_train)
         training_job.validation_data_count = len(X_test)
-        training_job.log_output += f"""
-Training completed successfully!
-Model metrics:
-- Accuracy: {accuracy:.4f}
-- Precision: {precision:.4f}
-- Recall: {recall:.4f}
-- F1 Score: {f1:.4f}
-- AUC: {auc:.4f if auc else 'N/A'}
-
-Confusion Matrix:
-{cm}
-
-Top important features:
-{json.dumps({k: float(v) for k, v in list(feature_importances.items())[:5]}, indent=2)}
-"""
+        # Prepare log output with safer string formatting
+        log_output = "Training completed successfully!\nModel metrics:\n"
+        log_output += f"- Accuracy: {accuracy:.4f}\n"
+        log_output += f"- Precision: {precision:.4f}\n"
+        log_output += f"- Recall: {recall:.4f}\n"
+        log_output += f"- F1 Score: {f1:.4f}\n"
+        
+        # Safely handle AUC which might be None
+        if auc is not None:
+            log_output += f"- AUC: {auc:.4f}\n"
+        else:
+            log_output += "- AUC: N/A\n"
+        
+        log_output += f"\nConfusion Matrix:\n{cm}\n\n"
+        
+        # Add top features if available
+        if feature_importances:
+            top_features = {k: float(v) for k, v in list(feature_importances.items())[:5]}
+            log_output += f"Top important features:\n{json.dumps(top_features, indent=2)}"
+        else:
+            log_output += "Feature importances not available for this model."
+            
+        training_job.log_output += log_output
         training_job.save()
         
         return {
