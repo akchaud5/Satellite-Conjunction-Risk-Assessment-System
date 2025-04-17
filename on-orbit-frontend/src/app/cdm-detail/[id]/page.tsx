@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import Link from "next/link";
+import MLPredictionForm from "@/components/ml/MLPredictionForm";
 
 interface CDM {
   id: number;
@@ -147,7 +148,8 @@ export default function CDMDetailPage() {
             Back to Dashboard
           </button>
         </Link>
-        <div className="max-w-4xl w-full bg-white shadow-md rounded-3xl p-8">
+        <div className="max-w-4xl w-full flex flex-col md:flex-row gap-6">
+          <div className="w-full md:w-2/3 bg-white shadow-md rounded-3xl p-8">
           <h1 className="text-2xl font-bold mb-4">CDM Detail - {cdm.message_id}</h1>
           <div className="space-y-3">
             <p>
@@ -298,6 +300,9 @@ export default function CDMDetailPage() {
               <strong>Hard Body Radius:</strong> {cdm.hard_body_radius}
             </p>
           </div>
+        </div>
+        <div className="w-full md:w-1/3">
+          <MLPredictionForm cdmId={Number(id)} />
         </div>
       </div>
     </>
