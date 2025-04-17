@@ -11,7 +11,8 @@ This tool helps assess potential orbital collisions using a blend of orbital mec
 
 ### Collision Prediction Functionality
 - **Data Input**: Upload satellite information for collision risk assessments.
-- **Prediction Results**: Generate collision predictions based on machine learning models.
+- **Analytical Predictions**: Perform physics-based orbital calculations using MATLAB.
+- **Machine Learning Predictions**: Generate enhanced collision predictions using AI/ML models.
 - **Reports**: Save and manage prediction reports for further analysis.
 
 ### Admin Controls
@@ -22,6 +23,7 @@ This tool helps assess potential orbital collisions using a blend of orbital mec
 
 - **Backend**: Django with Django REST Framework
 - **Orbit Mechanics**: MATLAB integration via MATLAB Engine for Python
+- **Machine Learning**: scikit-learn, XGBoost for predictive modeling
 - **Scientific Computing**: NumPy, SciPy, Pandas
 - **Frontend**: Next.js (React) with TypeScript and Tailwind CSS 
 - **Visualization**: D3.js for globe rendering, Satellite.js for orbit calculations
@@ -37,9 +39,17 @@ Satellite-Conjunction-Risk-Assessment/
 │
 ├── Orbit_Predictor-BackEnd/       # Django backend
 │   ├── api/                       # Django app with models, views, serializers, and URLs
+│   │   ├── matlab/                # MATLAB integration for physics-based calculations
+│   │   ├── ml/                    # Machine learning module for AI-driven predictions
+│   │   ├── models/                # Data models including CDM, Collision, and ML models
+│   │   ├── management/            # Management commands for data handling and ML training
+│   │   └── views/                 # API endpoints for frontend communication
 │   └── orbit_predictor/           # Main project configuration files
 │
-├── env/                           # Python virtual environment
+├── env_py312/                     # Python virtual environment
+│
+├── test_ml.py                     # ML functionality testing script
+├── create_test_data.py            # Script for generating test collision data
 │
 └── README.md                      # Project README
 ```
@@ -51,6 +61,7 @@ Satellite-Conjunction-Risk-Assessment/
 - **Python 3.10-3.12** (MATLAB Engine supports up to 3.12) for the backend
 - **Node.js** and **npm** for the Next.js frontend
 - **MATLAB R2024b** for orbital calculations (required for full functionality)
+- **Machine Learning Libraries**: scikit-learn, pandas, joblib, xgboost
 - **Java JRE 11** (Amazon Corretto 11 recommended for Apple Silicon)
 - **SQLite** is included for local development
 - **PostgreSQL** for production database (optional)
@@ -162,6 +173,43 @@ This will start:
 2. Navigate to "Visualization" in the sidebar
 3. Select satellites from the dropdown menus (e.g., ISS - 25544 and NOAA-20 - 43013)
 4. Click "View Orbital Trajectories" to see the 3D visualization
+
+### Machine Learning Integration
+
+The system features a sophisticated machine learning module that enhances collision prediction capabilities:
+
+#### ML Capabilities
+
+- **Collision Probability Prediction**: ML models trained to provide more accurate collision probabilities
+- **Risk Classification**: Binary classifiers to categorize conjunctions as high or low risk
+- **Feature Importance Analysis**: Identifies which orbital parameters most influence collision risk
+- **Multiple Algorithms**: Support for Random Forest, Gradient Boosting, and XGBoost
+
+#### Using Machine Learning
+
+Train and use ML models with the following commands:
+
+```bash
+# Train a new collision probability prediction model
+cd Orbit_Predictor-BackEnd
+source ../env_py312/bin/activate
+python manage.py train_ml_model --model-type collision_probability --algorithm random_forest
+
+# Train with hyperparameter tuning
+python manage.py train_ml_model --model-type conjunction_risk --tune
+
+# Test ML functionality
+cd ..
+python test_ml.py
+```
+
+#### API Endpoints
+
+The ML functionality is accessible through REST API endpoints:
+
+- `GET/POST /api/ml/models/`: List and create ML models
+- `POST /api/ml/predict/`: Make predictions using trained models
+- `GET /api/ml/predictions/`: View prediction history for CDMs
 
 ### Maintaining Data Quality
 
