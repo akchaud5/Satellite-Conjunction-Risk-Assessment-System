@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:16
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    environment:
+      - POSTGRES_DB=orbit_predictor
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres  # For development only, use a strong password in production
+    ports:
+      - "5432:5432"
+
+  backend:
+    build: ./Orbit_Predictor-BackEnd
+    command: >
+      sh -c "python3.12 -m venv py312_venv &&
+             source py312_venv/bin/activate &&
+             pip install -r requirements.txt &&
+             python manage.py migrate &&
+             python manage.py runserver 0.0.0.0:8000"
+    volumes:
+      - ./Orbit_Predictor-BackEnd:/app
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+    environment:
+      - DB_NAME=orbit_predictor
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - DB_HOST=db
+      - DB_PORT=5432
+      - SECRET_KEY=django-insecure-key-for-development-only
+      - JWT_SECRET_KEY=jwt-secret-key-for-development-only
+      - DEBUG=True
+
+  frontend:
+    build: ./on-orbit-frontend
+    volumes:
+      - ./on-orbit-frontend:/app
+      - /app/node_modules
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    environment:
+      - NODE_ENV=development
+
+volumes:
+  postgres_data:

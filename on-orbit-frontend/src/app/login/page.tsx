@@ -29,8 +29,10 @@ export default function Login() {
             }
 
             const data = await response.json();
+            console.log("Login response:", data);
 
-            localStorage.setItem('token', data.access_token);
+            // Store access token from response
+            localStorage.setItem('token', data.access);
             
             router.push('/dashboard');
         } catch (err) {

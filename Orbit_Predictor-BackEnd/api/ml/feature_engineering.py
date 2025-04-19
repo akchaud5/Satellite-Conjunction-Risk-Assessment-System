@@ -159,8 +159,8 @@ def prepare_dataset_from_cdms(cdms, target_variable=None):
         
         if target_variable:
             if target_variable == 'probability_of_collision':
-                # Get the latest collision probability value
-                collisions = cdm.collisions.all().order_by('-created_at')
+                # Get the collision probability value (no created_at field in our model)
+                collisions = cdm.collisions.all()
                 if collisions.exists():
                     target_values.append(collisions.first().probability_of_collision)
                 else:

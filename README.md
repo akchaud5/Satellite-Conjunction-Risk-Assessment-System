@@ -80,17 +80,15 @@ Satellite-Conjunction-Risk-Assessment/
    - **Backend**: Set up and activate the virtual environment, then install Django and other requirements.
 
      ```bash
-     python3 -m venv env_py312
-     source env_py312/bin/activate
+     # Use Python 3.12 for MATLAB compatibility
+     python3.12 -m venv py312_venv
+     source py312_venv/bin/activate
      pip install -r requirements.txt
      ```
 
-   - **MATLAB Engine**: Install the MATLAB Engine for Python (after installing MATLAB R2024b).
+   - **MATLAB Engine**: The MATLAB Engine is now automatically installed when you run pip install with the requirements.txt file. Make sure you have MATLAB R2024b installed.
 
-     ```bash
-     cd /Applications/MATLAB_R2024b.app/extern/engines/python
-     python setup.py install
-     ```
+   - **Important Note**: MATLAB Engine for Python only supports Python versions up to 3.12. Do not use Python 3.13 or newer.
 
    - **Frontend**: Navigate to the `on-orbit-frontend` folder and install dependencies.
 
@@ -101,7 +99,24 @@ Satellite-Conjunction-Risk-Assessment/
 
 3. **Database Setup**
 
+   **SQLite (Development)**: 
    SQLite is configured by default for local development. No additional setup is required.
+   
+   **PostgreSQL (Production)**:
+   For production environments, the project is configured to use PostgreSQL:
+   
+   ```bash
+   # Using Docker (recommended)
+   docker-compose up -d
+   
+   # Manual setup
+   # 1. Install PostgreSQL
+   # 2. Create a database: orbit_predictor
+   # 3. Configure environment variables in .env file
+   # 4. Run migrations: python manage.py migrate
+   ```
+   
+   For detailed instructions on migrating from SQLite to PostgreSQL, see [POSTGRES_MIGRATION.md](POSTGRES_MIGRATION.md).
 
 4. **Inputting CDMs**  
 
@@ -148,12 +163,34 @@ Satellite-Conjunction-Risk-Assessment/
 
 ### Running the Project
 
+#### Using Docker (Recommended for Production)
+
+The easiest way to run the entire stack with PostgreSQL:
+
+```bash
+# Start all services (backend, frontend, PostgreSQL)
+docker-compose up -d
+
+# View logs
+docker-compose logs -f
+
+# Stop all services
+docker-compose down
+```
+
+This will start:
+- **PostgreSQL database** at `localhost:5432`
+- **Django backend** at `http://localhost:8000`
+- **Next.js frontend** at `http://localhost:3000`
+
+#### Manual Setup (Development)
+
 Run the backend and frontend in separate terminal windows:
 
 1. **Start the Django backend**:
    ```bash
    cd Orbit_Predictor-BackEnd
-   source ../env_py312/bin/activate
+   source ../py312_venv/bin/activate
    python manage.py runserver
    ```
 

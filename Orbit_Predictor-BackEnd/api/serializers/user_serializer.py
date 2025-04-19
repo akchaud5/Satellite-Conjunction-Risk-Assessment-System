@@ -105,7 +105,8 @@ class UserSerializer(serializers.ModelSerializer):
 class LoginSerializer(serializers.Serializer):
     email = serializers.EmailField()
     password = serializers.CharField(write_only=True)
-    access_token = serializers.CharField(read_only=True)
+    # Changed to 'access' for consistency with frontend
+    access = serializers.CharField(read_only=True)
     refresh_token = serializers.CharField(read_only=True)
 
     def validate(self, data):
@@ -140,7 +141,7 @@ class LoginSerializer(serializers.Serializer):
         refresh_token = jwt.encode(refresh_payload, settings.JWT_SECRET_KEY, algorithm='HS256')
 
         return {
-            'access_token': access_token,
+            'access': access_token,
             'refresh_token': refresh_token,
         }
 
@@ -177,7 +178,7 @@ class RefreshTokenSerializer(serializers.Serializer):
         new_access_token = jwt.encode(new_access_payload, settings.JWT_SECRET_KEY, algorithm='HS256')
 
         return {
-            'access_token': new_access_token
+            'access': new_access_token
         }
 
 

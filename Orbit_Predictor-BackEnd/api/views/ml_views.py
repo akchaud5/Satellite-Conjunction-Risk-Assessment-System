@@ -17,7 +17,7 @@ from ..serializers.ml_serializer import (
     TrainingJobSerializer,
     ModelPredictionSerializer
 )
-from ..permissions import IsAdmin, IsCollisionAnalyst
+from ..permissions import IsAdmin, IsCollisionAnalyst, CanUseMachineLearning
 from ..ml.prediction import (
     predict_collision_probability,
     assess_collision_risk,
@@ -36,7 +36,7 @@ class MLModelListCreateView(generics.ListCreateAPIView):
     """
     queryset = MLModel.objects.all()
     serializer_class = MLModelSerializer
-    permission_classes = [IsAuthenticated, IsCollisionAnalyst]
+    permission_classes = [IsAuthenticated, CanUseMachineLearning]
     
     def get_queryset(self):
         """Filter query by status and model_type if provided"""
@@ -58,7 +58,7 @@ class MLModelDetailView(generics.RetrieveUpdateDestroyAPIView):
     """
     queryset = MLModel.objects.all()
     serializer_class = MLModelSerializer
-    permission_classes = [IsAuthenticated, IsCollisionAnalyst]
+    permission_classes = [IsAuthenticated, CanUseMachineLearning]
 
 
 class TrainingJobListCreateView(generics.ListCreateAPIView):
@@ -67,7 +67,7 @@ class TrainingJobListCreateView(generics.ListCreateAPIView):
     """
     queryset = TrainingJob.objects.all()
     serializer_class = TrainingJobSerializer
-    permission_classes = [IsAuthenticated, IsCollisionAnalyst]
+    permission_classes = [IsAuthenticated, CanUseMachineLearning]
     
     def get_queryset(self):
         """Filter query by status and ml_model if provided"""
@@ -162,7 +162,7 @@ class TrainingJobDetailView(generics.RetrieveAPIView):
     """
     queryset = TrainingJob.objects.all()
     serializer_class = TrainingJobSerializer
-    permission_classes = [IsAuthenticated, IsCollisionAnalyst]
+    permission_classes = [IsAuthenticated, CanUseMachineLearning]
 
 
 class MLPredictionView(APIView):
@@ -231,7 +231,7 @@ class ModelComparisonView(APIView):
     """
     Compare predictions from different ML models
     """
-    permission_classes = [IsAuthenticated, IsCollisionAnalyst]
+    permission_classes = [IsAuthenticated, CanUseMachineLearning]
     
     def post(self, request, *args, **kwargs):
         """Compare predictions from different models for the same CDM"""
