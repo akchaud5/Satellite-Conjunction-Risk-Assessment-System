@@ -1,20 +1,15 @@
 env/
 env_py312/
 Orbit_Predictor-BackEnd/.env
-Orbit_Predictor-BackEnd/api/__pycache__/
-Orbit_Predictor-BackEnd/orbit_predictor/__pycache__/
-Orbit_Predictor-BackEnd/api/migrations/__pycache__/
-Orbit_Predictor-BackEnd/api/models/__pycache__/
-Orbit_Predictor-BackEnd/api/serializers/__pycache__/
-Orbit_Predictor-BackEnd/api/views/__pycache__/
-Orbit_Predictor-BackEnd/api/management/commands/__pycache__/
 Orbit_Predictor-BackEnd/db.sqlite3
 node_modules
 
 .env
 check_active_satellites.py
 install_matlab_engine.py
-*.pyc
+# Python bytecode
+__pycache__/
+*.py[cod]
 
 # Virtualenvs
 .venv/
