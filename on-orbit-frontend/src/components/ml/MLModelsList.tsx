@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { LucideLoader, AlertCircle, Check, X } from "lucide-react";
+import { apiFetch } from "@/lib/api";
 
 interface MLModel {
   id: string;
@@ -33,7 +34,7 @@ export default function MLModelsList() {
         const token = localStorage.getItem("token");
         if (!token) throw new Error("Authentication required");
 
-        const response = await fetch("http://localhost:8000/api/ml/models/", {
+        const response = await apiFetch("/api/ml/models/", {
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,

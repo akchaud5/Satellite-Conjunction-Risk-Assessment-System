@@ -7,6 +7,7 @@ import { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { worksans } from '@/app/styles/font';
 import { ChartPie, Satellite, User } from 'lucide-react';
+import { clearTokens } from "@/lib/api";
 
 export default function Navbar() {
     const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -24,8 +25,9 @@ export default function Navbar() {
     }, []);
 
     const handleLogout = () => {
-        localStorage.removeItem('token');
-        localStorage.removeItem('username');
+        // Clears the refresh token too; leaving it behind meant a logged-out
+        // browser still held a credential good for seven days.
+        clearTokens();
         setIsLoggedIn(false);
         router.push('/');
     };

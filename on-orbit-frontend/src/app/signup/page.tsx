@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Footer from '@/components/footer/page';
+import { apiUrl } from "@/lib/api";
 
 export default function SignUp() {
     const [email, setEmail] = useState('');
@@ -29,7 +30,7 @@ export default function SignUp() {
         }
 
         try {
-            const response = await fetch("http://localhost:8000/api/register/", {
+            const response = await fetch(apiUrl("/api/register/"), {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",

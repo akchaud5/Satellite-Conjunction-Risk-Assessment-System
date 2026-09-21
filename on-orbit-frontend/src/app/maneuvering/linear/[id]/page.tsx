@@ -6,6 +6,8 @@ import HighchartsReact from "highcharts-react-official";
 import { useParams } from "next/navigation";
 import Loading from "@/app/loading";
 import Link from "next/link";
+import { apiFetch } from "@/lib/api";
+import { errorMessage } from "@/lib/utils";
 
 interface TrajectoryPoint {
   T_hours_before_TCA: number;
@@ -37,7 +39,7 @@ export default function ManeuveringDashboard() {
         };
 
         // Use the id from the URL as the cdm_id.
-        const response = await fetch("http://localhost:8000/api/tradespace/linear/", {
+        const response = await apiFetch("/api/tradespace/linear/", {
           method: "POST",
           headers,
           body: JSON.stringify({ cdm_id: Number(id) }),
@@ -48,9 +50,9 @@ export default function ManeuveringDashboard() {
         const data = await response.json();
         // Backend returns an object with a "trajectory" field.
         setTrajectory(data.trajectory);
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error(err);
-        setError(err.message || "An error occurred");
+        setError(errorMessage(err, "An error occurred"));
       } finally {
         setLoading(false);
       }

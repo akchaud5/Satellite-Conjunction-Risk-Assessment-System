@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Footer from '@/components/footer/page';
-import Csa from '@/components/csa/csa';
+import { apiUrl, storeTokens } from "@/lib/api";
 
 export default function Login() {
     const [email, setEmail] = useState('');
@@ -16,7 +16,7 @@ export default function Login() {
         setError(null);
 
         try {
-            const response = await fetch('http://localhost:8000/api/login/', {
+            const response = await fetch(apiUrl('/api/login/'), {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -29,10 +29,11 @@ export default function Login() {
             }
 
             const data = await response.json();
-            console.log("Login response:", data);
 
-            // Store access token from response
-            localStorage.setItem('token', data.access);
+            // Store both tokens. Only the access token used to be kept, so the
+            // refresh endpoint was never callable and every session died after
+            // 24 hours with no way to renew it.
+            storeTokens(data.access, data.refresh_token);
             
             router.push('/dashboard');
         } catch (err) {

@@ -5,6 +5,8 @@ import { useParams } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import Link from "next/link";
 import MLPredictionForm from "@/components/ml/MLPredictionForm";
+import { apiFetch } from "@/lib/api";
+import { errorMessage } from "@/lib/utils";
 
 interface CDM {
   id: number;
@@ -81,7 +83,7 @@ export default function CDMDetailPage() {
     const fetchCDM = async () => {
       try {
         const token = localStorage.getItem("token");
-        const response = await fetch(`http://localhost:8000/api/cdms/${id}/`, {
+        const response = await apiFetch(`/api/cdms/${id}/`, {
           headers: {
             "Content-Type": "application/json",
             ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -92,8 +94,8 @@ export default function CDMDetailPage() {
         }
         const data = await response.json();
         setCdm(data);
-      } catch (err: any) {
-        setError(err.message || "Unknown error occurred.");
+      } catch (err: unknown) {
+        setError(errorMessage(err, "Unknown error occurred."));
       } finally {
         setLoading(false);
       }
@@ -304,6 +306,7 @@ export default function CDMDetailPage() {
         <div className="w-full md:w-1/3">
           <MLPredictionForm cdmId={Number(id)} />
         </div>
+      </div>
       </div>
     </>
   );

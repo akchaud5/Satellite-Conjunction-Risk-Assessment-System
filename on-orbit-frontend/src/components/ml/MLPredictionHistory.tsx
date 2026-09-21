@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { LucideLoader, AlertCircle } from "lucide-react";
+import { apiFetch } from "@/lib/api";
 
 interface ModelPrediction {
   id: string;
@@ -34,7 +35,7 @@ export default function MLPredictionHistory() {
         const token = localStorage.getItem("token");
         if (!token) throw new Error("Authentication required");
 
-        const response = await fetch("http://localhost:8000/api/ml/predictions/", {
+        const response = await apiFetch("/api/ml/predictions/", {
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,

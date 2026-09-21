@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { apiFetch } from "@/lib/api";
 
 interface MLModel {
   id: string;
@@ -16,9 +17,22 @@ interface CDM {
   sat2_object_designator: string;
 }
 
+/** What /api/ml/predict/ returns; fields vary by prediction_type. */
+export interface PredictionResult {
+  prediction_id?: string;
+  model_id?: string;
+  model_name?: string;
+  model_version?: string;
+  predicted_probability?: number;
+  predicted_miss_distance?: number;
+  risk_score?: number;
+  risk_category?: string;
+  explanation_data?: Record<string, unknown>;
+}
+
 interface MLPredictionFormProps {
   cdmId: number;
-  onPredictionComplete?: (result: any) => void;
+  onPredictionComplete?: (result: PredictionResult) => void;
 }
 
 export default function MLPredictionForm({ cdmId, onPredictionComplete }: MLPredictionFormProps) {
@@ -28,7 +42,7 @@ export default function MLPredictionForm({ cdmId, onPredictionComplete }: MLPred
   const [loading, setLoading] = useState(false);
   const [loadingModels, setLoadingModels] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [result, setResult] = useState<any>(null);
+  const [result, setResult] = useState<PredictionResult | null>(null);
   const [cdm, setCdm] = useState<CDM | null>(null);
 
   // Fetch ML models
@@ -38,7 +52,7 @@ export default function MLPredictionForm({ cdmId, onPredictionComplete }: MLPred
         const token = localStorage.getItem("token");
         if (!token) throw new Error("Authentication required");
 
-        const response = await fetch("http://localhost:8000/api/ml/models/?status=active", {
+        const response = await apiFetch("/api/ml/models/?status=active", {
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
@@ -80,7 +94,7 @@ export default function MLPredictionForm({ cdmId, onPredictionComplete }: MLPred
         const token = localStorage.getItem("token");
         if (!token) throw new Error("Authentication required");
 
-        const response = await fetch(`http://localhost:8000/api/cdms/${cdmId}/`, {
+        const response = await apiFetch(`/api/cdms/${cdmId}/`, {
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
@@ -118,7 +132,7 @@ export default function MLPredictionForm({ cdmId, onPredictionComplete }: MLPred
       const token = localStorage.getItem("token");
       if (!token) throw new Error("Authentication required");
 
-      const response = await fetch("http://localhost:8000/api/ml/predict/", {
+      const response = await apiFetch("/api/ml/predict/", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

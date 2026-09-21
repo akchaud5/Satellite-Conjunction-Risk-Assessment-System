@@ -18,6 +18,7 @@ import {
 import { Line } from "react-chartjs-2";
 import 'chartjs-adapter-date-fns';
 import Link from "next/link";
+import { apiFetch } from "@/lib/api";
 
 ChartJS.register(
   CategoryScale,
@@ -122,7 +123,7 @@ export default function Dashboard() {
         return;
       }
       try {
-        const response = await fetch("http://localhost:8000/api/users/current_user/", {
+        const response = await apiFetch("/api/users/current_user/", {
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
@@ -170,7 +171,7 @@ export default function Dashboard() {
           const domain = user.email.split("@").pop()?.toLowerCase() || "";
           if (domain in spaceAgencyMap) {
             const orgName = spaceAgencyMap[domain];
-            const orgResponse = await fetch(`http://localhost:8000/api/organizations/?search=${orgName}`, { headers });
+            const orgResponse = await apiFetch(`/api/organizations/?search=${orgName}`, { headers });
             if (!orgResponse.ok) {
               if (orgResponse.status === 401) {
                 localStorage.removeItem("token");
@@ -187,7 +188,7 @@ export default function Dashboard() {
               cdmsData = orgData[0].cdms;
             } else {
               // Fallback to default endpoint if no matching organization found
-              const response = await fetch("http://localhost:8000/api/cdms/", { headers });
+              const response = await apiFetch("/api/cdms/", { headers });
               if (!response.ok) {
                 if (response.status === 401) {
                   localStorage.removeItem("token");
@@ -199,7 +200,7 @@ export default function Dashboard() {
               cdmsData = await response.json();
             }
           } else {
-            const response = await fetch("http://localhost:8000/api/cdms/", { headers });
+            const response = await apiFetch("/api/cdms/", { headers });
             if (!response.ok) {
               if (response.status === 401) {
                 localStorage.removeItem("token");
@@ -211,7 +212,7 @@ export default function Dashboard() {
             cdmsData = await response.json();
           }
         } else {
-          const response = await fetch("http://localhost:8000/api/cdms/", { headers });
+          const response = await apiFetch("/api/cdms/", { headers });
           if (!response.ok) {
             if (response.status === 401) {
               localStorage.removeItem("token");
@@ -224,7 +225,7 @@ export default function Dashboard() {
         }
 
         // Fetch collision probabilities
-        const collisionResponse = await fetch("http://localhost:8000/api/collisions/", { headers });
+        const collisionResponse = await apiFetch("/api/collisions/", { headers });
         if (!collisionResponse.ok) {
           if (collisionResponse.status === 401) throw new Error("Unauthorized: Invalid or expired token");
           throw new Error("Failed to fetch collision probabilities");
@@ -294,7 +295,7 @@ export default function Dashboard() {
       return;
     }
     try {
-      const response = await fetch(`http://localhost:8000/api/organizations/${organization.id}/`, {
+      const response = await apiFetch(`/api/organizations/${organization.id}/`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -322,7 +323,7 @@ export default function Dashboard() {
       return;
     }
     try {
-      const response = await fetch(`http://localhost:8000/api/cdms/${cdmId}/privacy/`, {
+      const response = await apiFetch(`/api/cdms/${cdmId}/privacy/`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",

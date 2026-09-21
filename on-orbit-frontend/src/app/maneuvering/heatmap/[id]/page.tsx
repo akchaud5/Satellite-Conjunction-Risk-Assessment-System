@@ -6,6 +6,8 @@ import HighchartsReact from "highcharts-react-official";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import Loading from "@/app/loading";
+import { apiFetch } from "@/lib/api";
+import { errorMessage } from "@/lib/utils";
 
 interface HeatmapDataPoint {
   T_hours: number;
@@ -45,7 +47,7 @@ export default function ManeuveringHeatmapPage() {
     import("highcharts/modules/heatmap").then(({ default: HeatmapModule }) => {
       try {
         // Force the module call and ignore any errors it might throw.
-        (HeatmapModule as any)(Highcharts);
+        (HeatmapModule as unknown as (h: typeof Highcharts) => void)(Highcharts);
       } catch (e) {
         // Ignore the error
         console.warn("Ignoring heatmap module error:", e);
@@ -66,7 +68,7 @@ export default function ManeuveringHeatmapPage() {
           Authorization: `Bearer ${accessToken}`,
         };
 
-        const response = await fetch("http://localhost:8000/api/tradespace/", {
+        const response = await apiFetch("/api/tradespace/", {
           method: "POST",
           headers: headers,
           body: JSON.stringify({ cdm_id: Number(id) }),
@@ -76,8 +78,8 @@ export default function ManeuveringHeatmapPage() {
         }
         const data: BackendResponse = await response.json();
         setHeatmapData(data.heatmap_data);
-      } catch (err: any) {
-        setError(err.message || "An error occurred");
+      } catch (err: unknown) {
+        setError(errorMessage(err, "An error occurred"));
       } finally {
         setLoading(false);
       }
@@ -133,12 +135,15 @@ export default function ManeuveringHeatmapPage() {
       ],
     },
     tooltip: {
-      formatter: function () {
-        // @ts-ignore
-        const timeLabel = this.series.xAxis.categories[this.point.x];
-        // @ts-ignore
-        const dvLabel = this.series.yAxis.categories[this.point.y];
-        return `<b>Time:</b> ${timeLabel}<br/><b>Δv:</b> ${dvLabel}<br/><b>PC:</b> ${this.point.value.toExponential(3)}`;
+      formatter: function (this: Highcharts.Point) {
+        // Highcharts 12 changed the tooltip formatter's `this` from the
+        // tooltip context object to the Point itself. This code still read
+        // `this.point.*`, which is undefined on a Point -- the suppression
+        // comments that used to sit here hid the resulting hover-time crash.
+        const timeLabel = (this.series.xAxis.categories ?? [])[this.x];
+        const dvLabel = (this.series.yAxis.categories ?? [])[this.y ?? 0];
+        const value = (this as Highcharts.Point & { value?: number }).value ?? 0;
+        return `<b>Time:</b> ${timeLabel}<br/><b>Δv:</b> ${dvLabel}<br/><b>PC:</b> ${value.toExponential(3)}`;
       },
     },
     series: [
@@ -175,12 +180,15 @@ export default function ManeuveringHeatmapPage() {
       ],
     },
     tooltip: {
-      formatter: function () {
-        // @ts-ignore
-        const timeLabel = this.series.xAxis.categories[this.point.x];
-        // @ts-ignore
-        const dvLabel = this.series.yAxis.categories[this.point.y];
-        return `<b>Time:</b> ${timeLabel}<br/><b>Δv:</b> ${dvLabel}<br/><b>Miss Distance:</b> ${this.point.value.toFixed(3)}`;
+      formatter: function (this: Highcharts.Point) {
+        // Highcharts 12 changed the tooltip formatter's `this` from the
+        // tooltip context object to the Point itself. This code still read
+        // `this.point.*`, which is undefined on a Point -- the suppression
+        // comments that used to sit here hid the resulting hover-time crash.
+        const timeLabel = (this.series.xAxis.categories ?? [])[this.x];
+        const dvLabel = (this.series.yAxis.categories ?? [])[this.y ?? 0];
+        const value = (this as Highcharts.Point & { value?: number }).value ?? 0;
+        return `<b>Time:</b> ${timeLabel}<br/><b>Δv:</b> ${dvLabel}<br/><b>Miss Distance:</b> ${value.toFixed(3)}`;
       },
     },
     series: [

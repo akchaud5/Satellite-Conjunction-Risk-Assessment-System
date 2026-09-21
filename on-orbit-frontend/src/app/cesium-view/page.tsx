@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { apiFetch } from "@/lib/api";
 
 interface CDM {
   id: number;
@@ -42,7 +43,7 @@ export default function CesiumViewSelectionPage() {
           Authorization: `Bearer ${accessToken}`,
         };
 
-        const response = await fetch("http://localhost:8000/api/cdms/", { headers });
+        const response = await apiFetch("/api/cdms/", { headers });
         if (!response.ok) {
           if (response.status === 401) {
             localStorage.removeItem('token');

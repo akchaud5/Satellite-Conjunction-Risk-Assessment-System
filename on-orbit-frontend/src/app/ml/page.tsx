@@ -6,6 +6,7 @@ import Navbar from "@/components/Navbar";
 import MLModelsList from "@/components/ml/MLModelsList";
 import TrainModelForm from "@/components/ml/TrainModelForm";
 import MLPredictionHistory from "@/components/ml/MLPredictionHistory";
+import { apiFetch } from "@/lib/api";
 
 interface User {
   id: string;
@@ -29,7 +30,7 @@ export default function MLPage() {
         return;
       }
       try {
-        const response = await fetch("http://localhost:8000/api/users/current_user/", {
+        const response = await apiFetch("/api/users/current_user/", {
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,

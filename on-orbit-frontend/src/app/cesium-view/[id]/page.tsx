@@ -6,6 +6,7 @@ import { useParams, useRouter } from "next/navigation";
 import * as satellite from "satellite.js";
 import * as d3 from "d3";
 import { feature } from "topojson-client";
+import { apiFetch } from "@/lib/api";
 
 // Define interfaces for our data
 interface CDM {
@@ -81,8 +82,8 @@ export default function OrbitVisualizationPage() {
       }
       
       // Use our backend proxy to avoid CORS issues
-      const response = await fetch(
-        `http://localhost:8000/api/tle/${objectDesignator}/`,
+      const response = await apiFetch(
+        `/api/tle/${objectDesignator}/`,
         {
           headers: {
             "Authorization": `Bearer ${accessToken}`,
@@ -290,8 +291,8 @@ export default function OrbitVisualizationPage() {
           Authorization: `Bearer ${accessToken}`,
         };
 
-        const cdmResponse = await fetch(
-          `http://localhost:8000/api/cdms/${idRef.current}/`,
+        const cdmResponse = await apiFetch(
+          `/api/cdms/${idRef.current}/`,
           { headers }
         );
         if (!cdmResponse.ok) {

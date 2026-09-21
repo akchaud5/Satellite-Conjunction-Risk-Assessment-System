@@ -2,8 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
-import Navbar from "../../components/Navbar";
+import { apiFetch } from "@/lib/api";
 
 interface User {
   id: string;
@@ -29,7 +28,7 @@ export default function UserPage() {
       }
 
       try {
-        const response = await fetch("http://localhost:8000/api/users/current_user/", {
+        const response = await apiFetch("/api/users/current_user/", {
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
@@ -69,7 +68,7 @@ export default function UserPage() {
       return;
     }
     try {
-      const response = await fetch("http://localhost:8000/api/users/notifications/", {
+      const response = await apiFetch("/api/users/notifications/", {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",

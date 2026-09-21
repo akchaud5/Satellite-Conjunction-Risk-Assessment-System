@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { apiFetch } from "@/lib/api";
 
 interface FormData {
   model_name: string;
@@ -46,7 +47,7 @@ export default function TrainModelForm() {
       const token = localStorage.getItem("token");
       if (!token) throw new Error("Authentication required");
 
-      const response = await fetch("http://localhost:8000/api/ml/training/", {
+      const response = await apiFetch("/api/ml/training/", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -60,7 +61,7 @@ export default function TrainModelForm() {
         throw new Error(errorData.error || "Failed to start training job");
       }
 
-      const data = await response.json();
+      await response.json();
       setSuccess(true);
       // Reset form after successful submission
       setFormData({
