@@ -14,7 +14,10 @@ node_modules
 .env
 check_active_satellites.py
 install_matlab_engine.py
-*.pyc.venv/
+*.pyc
+
+# Virtualenvs
+.venv/
 venv/
 py312_venv/
 staticfiles/

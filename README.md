@@ -11,8 +11,12 @@ This tool helps assess potential orbital collisions using a blend of orbital mec
 
 ### Collision Prediction Functionality
 - **Data Input**: Upload satellite information for collision risk assessments.
-- **Analytical Predictions**: Perform physics-based orbital calculations using MATLAB.
-- **Machine Learning Predictions**: Generate enhanced collision predictions using AI/ML models.
+- **Analytical Predictions**: Physics-based orbital calculations using the NASA CARA
+  MATLAB routines (`Pc2D_Foster`, `Pc3D_Hall`). Requires MATLAB — see
+  [MATLAB is optional](#matlab-is-optional).
+- **Machine Learning Predictions**: Regression and classification models over CDM
+  features — see [About the ML models](#about-the-ml-models) for what they do and
+  do not tell you.
 - **Reports**: Save and manage prediction reports for further analysis.
 
 ### Admin Controls
@@ -21,13 +25,14 @@ This tool helps assess potential orbital collisions using a blend of orbital mec
 
 ## 🛠️ Tech Stack
 
-- **Backend**: Django with Django REST Framework
-- **Orbit Mechanics**: MATLAB integration via MATLAB Engine for Python
+- **Backend**: Django 5.2 (LTS) with Django REST Framework
+- **Orbit Mechanics**: MATLAB integration via MATLAB Engine for Python (optional)
 - **Machine Learning**: scikit-learn, XGBoost for predictive modeling
 - **Scientific Computing**: NumPy, SciPy, Pandas
-- **Frontend**: Next.js (React) with TypeScript and Tailwind CSS 
-- **Visualization**: D3.js for globe rendering, Satellite.js for orbit calculations
-- **Database**: SQLite (local development) / PostgreSQL (production)
+- **Frontend**: Next.js 16 (React 19) with TypeScript and Tailwind CSS 4
+- **Visualization**: D3.js for globe rendering, Satellite.js for orbit propagation,
+  Chart.js and Highcharts for plots
+- **Database**: PostgreSQL (default); SQLite available for local work and tests
 - **Authentication**: JWT for secure API access
 
 ## 📂 Project Structure
@@ -36,20 +41,22 @@ This tool helps assess potential orbital collisions using a blend of orbital mec
 Satellite-Conjunction-Risk-Assessment/
 │
 ├── on-orbit-frontend/             # Next.js frontend
+│   └── src/lib/api.ts             # API client: base URL, auth, token refresh
 │
 ├── Orbit_Predictor-BackEnd/       # Django backend
 │   ├── api/                       # Django app with models, views, serializers, and URLs
-│   │   ├── matlab/                # MATLAB integration for physics-based calculations
-│   │   ├── ml/                    # Machine learning module for AI-driven predictions
+│   │   ├── matlab/                # MATLAB routines for physics-based calculations
+│   │   ├── matlab_runtime.py      # Lazy, optional MATLAB Engine loader
+│   │   ├── ml/                    # Machine learning module
 │   │   ├── models/                # Data models including CDM, Collision, and ML models
 │   │   ├── management/            # Management commands for data handling and ML training
-│   │   └── views/                 # API endpoints for frontend communication
+│   │   ├── tests/                 # Test suite
+│   │   └── views/                 # API endpoints
 │   └── orbit_predictor/           # Main project configuration files
 │
-├── env_py312/                     # Python virtual environment
-│
-├── test_ml.py                     # ML functionality testing script
 ├── create_test_data.py            # Script for generating test collision data
+├── requirements.txt               # Python dependencies
+├── requirements-matlab.txt        # Optional MATLAB Engine dependency
 │
 └── README.md                      # Project README
 ```
@@ -58,72 +65,80 @@ Satellite-Conjunction-Risk-Assessment/
 
 ### Prerequisites
 
-- **Python 3.10-3.12** (MATLAB Engine supports up to 3.12) for the backend
-- **Node.js** and **npm** for the Next.js frontend
-- **MATLAB R2024b** for orbital calculations (required for full functionality)
-- **Machine Learning Libraries**: scikit-learn, pandas, joblib, xgboost
-- **Java JRE 11** (Amazon Corretto 11 recommended for Apple Silicon)
-- **SQLite** is included for local development
-- **PostgreSQL** for production database (optional)
+- **Python 3.10–3.13** for the backend. If you want the MATLAB-backed analytic
+  endpoints, use **3.12**: MATLAB Engine for Python supports no higher.
+- **Node.js 22+** and **npm** for the Next.js frontend
+- **PostgreSQL** (or use `DB_ENGINE=sqlite` for local work)
+- **MATLAB R2024b** — optional, only for the analytic probability endpoints
+- **Docker** — optional, runs the whole stack
 
 ### Setup
 
 1. **Clone the Repository**
 
    ```bash
-   git clone https://github.com/akchaud5/Satellite-Conjunction-Risk-Assessment.git
-   cd Satellite-Conjunction-Risk-Assessment
+   git clone https://github.com/akchaud5/Satellite-Conjunction-Risk-Assessment-System.git
+   cd Satellite-Conjunction-Risk-Assessment-System
    ```
 
 2. **Install Dependencies**
 
-   - **Backend**: Set up and activate the virtual environment, then install Django and other requirements.
+   - **Backend**:
 
      ```bash
-     # Use Python 3.12 for MATLAB compatibility
-     python3.12 -m venv py312_venv
-     source py312_venv/bin/activate
+     python3.12 -m venv .venv
+     source .venv/bin/activate
      pip install -r requirements.txt
      ```
 
-   - **MATLAB Engine**: The MATLAB Engine is now automatically installed when you run pip install with the requirements.txt file. Make sure you have MATLAB R2024b installed.
-
-   - **Important Note**: MATLAB Engine for Python only supports Python versions up to 3.12. Do not use Python 3.13 or newer.
-
-   - **Frontend**: Navigate to the `on-orbit-frontend` folder and install dependencies.
+   - **Frontend**:
 
      ```bash
      cd on-orbit-frontend
-     npm install
+     npm ci
      ```
 
-3. **Database Setup**
+3. **Configure the environment**
 
-   **SQLite (Development)**: 
-   SQLite is configured by default for local development. No additional setup is required.
-   
-   **PostgreSQL (Production)**:
-   For production environments, the project is configured to use PostgreSQL:
-   
    ```bash
-   # Using Docker (recommended)
-   docker-compose up -d
-   
-   # Manual setup
-   # 1. Install PostgreSQL
-   # 2. Create a database: orbit_predictor
-   # 3. Configure environment variables in .env file
-   # 4. Run migrations: python manage.py migrate
+   cp Orbit_Predictor-BackEnd/.env.example Orbit_Predictor-BackEnd/.env
+   cp on-orbit-frontend/.env.example on-orbit-frontend/.env.local
    ```
-   
-   For detailed instructions on migrating from SQLite to PostgreSQL, see [POSTGRES_MIGRATION.md](POSTGRES_MIGRATION.md).
 
-4. **Inputting CDMs**  
+   Then edit both. `SECRET_KEY`, `JWT_SECRET_KEY` and `ALLOWED_HOSTS` are
+   **required** whenever `DEBUG=False`; the app refuses to start without them
+   rather than falling back to an insecure default. Generate a secret key with:
 
-   In order to input CDMs into the DB, you can use a configured endpoint and send in the CDM data as a JSON object. Here's how:
+   ```bash
+   python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
+   ```
 
-   Assuming your backend is running on port `8000`:
-   Send a request to `http://localhost:8000/api/cdms/create/` with your CDM json object. Example:
+4. **Database Setup**
+
+   **PostgreSQL (default)**: create a database named `orbit_predictor` and set
+   `DB_NAME` / `DB_USER` / `DB_PASSWORD` / `DB_HOST` / `DB_PORT` in `.env`. See
+   [POSTGRES_MIGRATION.md](POSTGRES_MIGRATION.md) for detailed instructions.
+
+   **SQLite (local development and tests)**: set `DB_ENGINE=sqlite` in `.env`.
+   No server needed.
+
+5. **Run Migrations and Load Sample Data**
+
+   ```bash
+   cd Orbit_Predictor-BackEnd
+   python manage.py migrate
+   python manage.py seed_cdm_data --file api/sample_data/oct5_data/cdm0.json
+   python manage.py seed_cdm_data --file api/sample_data/oct5_data/cdm1.json
+   python manage.py seed_cdm_data --file api/sample_data/oct5_data/cdm2.json
+   ```
+
+   The bundled sample CDMs are dated 2024-10-05. To shift them to the present for
+   a demo, see [Update CDM Dates](#update-cdm-dates).
+
+6. **Inputting CDMs**
+
+   To load CDMs over the API, POST a CDM JSON object to
+   `http://localhost:8000/api/cdms/create/`:
 
     `{
      "CCSDS_CDM_VERS": "{{version}}",
@@ -148,40 +163,33 @@ Satellite-Conjunction-Risk-Assessment/
      // continue on with rest of fields
    }`
 
-
-6. **Run DB Migrations and Load Sample Data**
-
-   Set up the database and load sample data:
-
-   ```bash
-   cd Orbit_Predictor-BackEnd
-   python manage.py migrate
-   python manage.py seed_cdm_data --file api/sample_data/oct5_data/cdm0.json
-   python manage.py seed_cdm_data --file api/sample_data/oct5_data/cdm1.json
-   python manage.py seed_cdm_data --file api/sample_data/oct5_data/cdm2.json
-   ```
+   `MESSAGE_ID` is required. Without MATLAB installed the CDM is still stored, and
+   the response carries a `warning` noting that the analytic probability was not
+   computed.
 
 ### Running the Project
 
-#### Using Docker (Recommended for Production)
-
-The easiest way to run the entire stack with PostgreSQL:
+#### Using Docker
 
 ```bash
 # Start all services (backend, frontend, PostgreSQL)
-docker-compose up -d
+docker compose up -d
 
 # View logs
-docker-compose logs -f
+docker compose logs -f
 
 # Stop all services
-docker-compose down
+docker compose down
 ```
 
 This will start:
 - **PostgreSQL database** at `localhost:5432`
 - **Django backend** at `http://localhost:8000`
 - **Next.js frontend** at `http://localhost:3000`
+
+The containers run Django's development server. For production, serve
+`orbit_predictor.wsgi:application` with gunicorn behind a real web server, and
+run the frontend with `npm run build && npm run start`.
 
 #### Manual Setup (Development)
 
@@ -190,7 +198,7 @@ Run the backend and frontend in separate terminal windows:
 1. **Start the Django backend**:
    ```bash
    cd Orbit_Predictor-BackEnd
-   source ../py312_venv/bin/activate
+   source ../.venv/bin/activate
    python manage.py runserver
    ```
 
@@ -204,83 +212,136 @@ This will start:
 - **Next.js frontend** at `http://localhost:3000`
 - **Django backend** at `http://localhost:8000`
 
+The frontend reads the backend URL from `NEXT_PUBLIC_API_URL`
+(`on-orbit-frontend/.env.local`), defaulting to `http://localhost:8000`.
+
+### Running the Tests
+
+```bash
+cd Orbit_Predictor-BackEnd
+DEBUG=true DB_ENGINE=sqlite python manage.py test api
+```
+
+Frontend checks:
+
+```bash
+cd on-orbit-frontend
+npm run lint
+npx tsc --noEmit
+npm run build
+```
+
+### MATLAB is optional
+
+The analytic probability endpoints (`Pc2D_Foster` / `Pc3D_Hall`) need MATLAB
+Engine for Python, which ships with MATLAB itself rather than from PyPI. It is
+**not** installed by `requirements.txt`, because pinning a machine-specific
+wheel path there made `pip install` fail on every machine without MATLAB at that
+exact path.
+
+Everything else — CDM management, users, the dashboard, the visualization and
+the ML endpoints — runs without it. The endpoints that do need it return
+**503** with an explanatory message when it is absent.
+
+To enable them, install the engine matching your MATLAB release:
+
+```bash
+pip install -r requirements-matlab.txt
+```
+
+See `requirements-matlab.txt` for the per-platform install path. The engine
+supports Python 3.9–3.12 only.
+
 ### Using the Visualization
 
 1. Create an account and log in
 2. Navigate to "Visualization" in the sidebar
-3. Select satellites from the dropdown menus (e.g., ISS - 25544 and NOAA-20 - 43013)
+3. Select satellites from the dropdown menus (e.g. ISS - 25544 and NOAA-20 - 43013)
 4. Click "View Orbital Trajectories" to see the 3D visualization
 
 ### Machine Learning Integration
 
-The system features a sophisticated machine learning module that enhances collision prediction capabilities:
+#### About the ML models
+
+Be clear about what these models are. They are trained against
+`Collision.probability_of_collision`, which is itself computed by the MATLAB
+`Pc2D_Foster` routine from the same CDM state vectors and covariances that are
+used as the input features. The models are therefore **surrogates of the
+analytic calculation**, not an independent estimate of collision risk: at best
+they reproduce `Pc2D_Foster` quickly and without a MATLAB dependency, and they
+cannot be more accurate than it.
+
+That is a legitimate and useful thing to have — a fast approximation that runs
+where MATLAB does not. It is not "better collision probabilities". Treating the
+output as an independent second opinion on risk would be a mistake.
 
 #### ML Capabilities
 
-- **Collision Probability Prediction**: ML models trained to provide more accurate collision probabilities
-- **Risk Classification**: Binary classifiers to categorize conjunctions as high or low risk
-- **Feature Importance Analysis**: Identifies which orbital parameters most influence collision risk
-- **Multiple Algorithms**: Support for Random Forest, Gradient Boosting, and XGBoost
+- **Collision Probability Prediction**: regression onto the analytic probability
+- **Risk Classification**: binary high/low-risk classification at a probability threshold
+- **Feature Importance Analysis**: which orbital parameters drive the model's output
+- **Multiple Algorithms**: Random Forest, Gradient Boosting, XGBoost
 
 #### Using Machine Learning
 
-Train and use ML models with the following commands:
-
 ```bash
-# Train a new collision probability prediction model
 cd Orbit_Predictor-BackEnd
-source ../env_py312/bin/activate
+source ../.venv/bin/activate
+
+# Train a new collision probability prediction model
 python manage.py train_ml_model --model-type collision_probability --algorithm random_forest
 
 # Train with hyperparameter tuning
 python manage.py train_ml_model --model-type conjunction_risk --tune
-
-# Test ML functionality
-cd ..
-python test_ml.py
 ```
+
+Training needs CDMs that already have collision records, so run
+`create_test_data.py` or compute collisions first.
 
 #### API Endpoints
 
-The ML functionality is accessible through REST API endpoints:
-
 - `GET/POST /api/ml/models/`: List and create ML models
+- `POST /api/ml/training/`: Start a training job. Returns **202 Accepted**
+  immediately with a `training_job_id`; training runs in the background.
+- `GET /api/ml/training/<id>/`: Poll a training job for status and metrics
 - `POST /api/ml/predict/`: Make predictions using trained models
 - `GET /api/ml/predictions/`: View prediction history for CDMs
 
 ### Maintaining Data Quality
-
-The system includes several tools to ensure data quality:
 
 #### Check Inactive Satellites
 
 Verify and remove CDMs with satellites that are no longer in orbit:
 
 ```bash
-# Check for inactive satellites (dry run - no changes made)
 cd Orbit_Predictor-BackEnd
-source ../env_py312/bin/activate
+source ../.venv/bin/activate
+
+# Check for inactive satellites (dry run - no changes made)
 python manage.py check_inactive_satellites --dry-run
 
 # Remove CDMs with inactive satellites
 python manage.py check_inactive_satellites
 ```
 
-This feature uses TLE (Two-Line Element) data from multiple sources to verify if a satellite is still in orbit, helping maintain a clean and accurate database.
+This feature uses TLE (Two-Line Element) data from multiple sources to verify if
+a satellite is still in orbit, helping maintain a clean and accurate database.
 
 #### Update CDM Dates
 
 Make conjunction events appear current by updating their timestamps:
 
 ```bash
-# Preview date changes without modifying the database
 cd Orbit_Predictor-BackEnd
-source ../env_py312/bin/activate
+source ../.venv/bin/activate
+
+# Preview date changes without modifying the database
 python manage.py update_cdm_dates --dry-run
 
 # Update all CDM dates to be current
 python manage.py update_cdm_dates
 ```
 
-This is particularly useful for demonstrations and testing, as it makes past or future-dated conjunction events appear to be happening now.
-
+This exists for demonstrations: the bundled sample data is fixed at 2024-10-05,
+and this shifts it to the present so conjunctions appear to be happening now. It
+rewrites real timestamps, so do not run it against data you care about.

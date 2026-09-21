@@ -2,6 +2,11 @@
 
 This document provides instructions for migrating the On-Orbit Collision Predictor application from SQLite to PostgreSQL.
 
+> **Note:** PostgreSQL is now the default. `orbit_predictor/settings.py` reads
+> `DB_ENGINE` from the environment and uses PostgreSQL unless it is set to
+> `sqlite`. A fresh install needs no migration; this document applies if you
+> have an existing SQLite database whose data you want to carry over.
+
 ## Why PostgreSQL?
 
 PostgreSQL offers several advantages over SQLite for production environments:
