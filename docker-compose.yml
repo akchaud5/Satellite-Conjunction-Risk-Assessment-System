@@ -1,4 +1,4 @@
-version: '3.8'
+# `version:` is obsolete in Compose v2 and emits a warning; removed.
 
 services:
   db:
@@ -8,45 +8,66 @@ services:
     environment:
       - POSTGRES_DB=orbit_predictor
       - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres  # For development only, use a strong password in production
+      # Development only. Override via a .env file for anything else.
+      - POSTGRES_PASSWORD=${DB_PASSWORD:-postgres}
     ports:
       - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d orbit_predictor"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
   backend:
-    build: ./Orbit_Predictor-BackEnd
+    build:
+      # The repository root, because requirements.txt lives there rather than
+      # in the backend directory. With a ./Orbit_Predictor-BackEnd context the
+      # Dockerfile's COPY of requirements.txt could never resolve.
+      context: .
+      dockerfile: Orbit_Predictor-BackEnd/Dockerfile
+    # The previous command ran `sh -c "... source py312_venv/bin/activate ..."`.
+    # `source` is a bash builtin and is not available in sh, so this failed
+    # immediately; a container also has no need of a virtualenv, since the
+    # image's Python is already dedicated to this app.
     command: >
-      sh -c "python3.12 -m venv py312_venv &&
-             source py312_venv/bin/activate &&
-             pip install -r requirements.txt &&
-             python manage.py migrate &&
+      sh -c "python manage.py migrate &&
              python manage.py runserver 0.0.0.0:8000"
     volumes:
       - ./Orbit_Predictor-BackEnd:/app
     ports:
       - "8000:8000"
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     environment:
       - DB_NAME=orbit_predictor
       - DB_USER=postgres
-      - DB_PASSWORD=postgres
+      - DB_PASSWORD=${DB_PASSWORD:-postgres}
       - DB_HOST=db
       - DB_PORT=5432
-      - SECRET_KEY=django-insecure-key-for-development-only
-      - JWT_SECRET_KEY=jwt-secret-key-for-development-only
+      - SECRET_KEY=${SECRET_KEY:-django-insecure-compose-development-key}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-jwt-insecure-compose-development-key}
       - DEBUG=True
+      - ALLOWED_HOSTS=localhost,127.0.0.1,backend
+      - CORS_ALLOWED_ORIGINS=http://localhost:3000
 
   frontend:
-    build: ./on-orbit-frontend
+    build:
+      context: ./on-orbit-frontend
+      dockerfile: Dockerfile
     volumes:
       - ./on-orbit-frontend:/app
       - /app/node_modules
+      - /app/.next
     ports:
       - "3000:3000"
     depends_on:
       - backend
     environment:
       - NODE_ENV=development
+      # Reached from the user's browser, not from inside the network, so this
+      # is the published host port rather than the `backend` service name.
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
 
 volumes:
   postgres_data:

@@ -39,6 +39,7 @@ export function storeTokens(access: string, refresh?: string): void {
   if (typeof window === "undefined") return;
   window.localStorage.setItem(ACCESS_TOKEN_KEY, access);
   if (refresh) window.localStorage.setItem(REFRESH_TOKEN_KEY, refresh);
+  notifyAuthChange();
 }
 
 export function clearTokens(): void {
@@ -46,6 +47,50 @@ export function clearTokens(): void {
   window.localStorage.removeItem(ACCESS_TOKEN_KEY);
   window.localStorage.removeItem(REFRESH_TOKEN_KEY);
   window.localStorage.removeItem("username");
+  notifyAuthChange();
+}
+
+/* ---------------------------------------------------------------------------
+ * Auth state as an external store.
+ *
+ * Components read this through useSyncExternalStore rather than copying
+ * localStorage into state from a mount effect. That pattern is what React's
+ * set-state-in-effect rule flags, and it also meant the navbar never noticed a
+ * login or logout that happened anywhere else -- including in another tab.
+ * ------------------------------------------------------------------------ */
+
+const AUTH_CHANGE_EVENT = "auth-change";
+
+function notifyAuthChange(): void {
+  window.dispatchEvent(new Event(AUTH_CHANGE_EVENT));
+}
+
+/** Subscribe to login/logout, in this tab and in others. */
+export function subscribeToAuth(onChange: () => void): () => void {
+  if (typeof window === "undefined") return () => {};
+  // 'storage' fires for other tabs; the custom event covers this one.
+  window.addEventListener("storage", onChange);
+  window.addEventListener(AUTH_CHANGE_EVENT, onChange);
+  return () => {
+    window.removeEventListener("storage", onChange);
+    window.removeEventListener(AUTH_CHANGE_EVENT, onChange);
+  };
+}
+
+/** Current auth snapshot for useSyncExternalStore. */
+export function getAuthSnapshot(): string | null {
+  return getAccessToken();
+}
+
+/** Server snapshot: always logged out, so SSR and first paint agree. */
+export function getAuthServerSnapshot(): string | null {
+  return null;
+}
+
+/** Display name snapshot, stored alongside the tokens. */
+export function getUsernameSnapshot(): string | null {
+  if (typeof window === "undefined") return null;
+  return window.localStorage.getItem("username");
 }
 
 /** Exchange the stored refresh token for a new access token. */

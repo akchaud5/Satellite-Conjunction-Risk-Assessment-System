@@ -1,0 +1,15 @@
+.git
+.venv
+venv
+env
+env_py312
+py312_venv
+node_modules
+**/node_modules
+**/.next
+**/__pycache__
+**/*.pyc
+**/db.sqlite3
+**/.env
+**/.env.local
+staticfiles

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { apiFetch } from "@/lib/api";
 
@@ -21,9 +21,7 @@ export default function CesiumViewSelectionPage() {
   // Selection states
   const [uniqueSatellites, setUniqueSatellites] = useState<string[]>([]);
   const [selectedSat1, setSelectedSat1] = useState<string>("");
-  const [availableSat2Options, setAvailableSat2Options] = useState<string[]>([]);
   const [selectedSat2, setSelectedSat2] = useState<string>("");
-  const [matchingCdm, setMatchingCdm] = useState<CDM | null>(null);
   
   const router = useRouter();
 
@@ -78,46 +76,34 @@ export default function CesiumViewSelectionPage() {
     fetchCDMs();
   }, [router]);
 
-  // Update available second satellites based on first selection
-  useEffect(() => {
-    if (!selectedSat1) {
-      setAvailableSat2Options([]);
-      return;
-    }
-    
-    // Find all CDMs involving the first satellite
-    const relevantCdms = cdms.filter(
-      cdm => cdm.sat1_object_designator === selectedSat1 || cdm.sat2_object_designator === selectedSat1
-    );
-    
-    // Extract all unique partner satellites
+  // Both of these are derived entirely from state that already exists, so they
+  // are computed during render rather than mirrored into state from an effect.
+  // The effect version cost an extra render pass on every selection change and
+  // is what React's set-state-in-effect rule flags.
+
+  // Second-satellite options: everything that has a conjunction with the first.
+  const availableSat2Options = useMemo(() => {
+    if (!selectedSat1) return [];
+
     const partners = new Set<string>();
-    relevantCdms.forEach(cdm => {
+    for (const cdm of cdms) {
       if (cdm.sat1_object_designator === selectedSat1) {
         partners.add(cdm.sat2_object_designator);
-      } else {
+      } else if (cdm.sat2_object_designator === selectedSat1) {
         partners.add(cdm.sat1_object_designator);
       }
-    });
-    
-    setAvailableSat2Options(Array.from(partners).sort());
-    setSelectedSat2(""); // Reset second selection
+    }
+    return Array.from(partners).sort();
   }, [selectedSat1, cdms]);
 
-  // Find matching CDM when both satellites are selected
-  useEffect(() => {
-    if (!selectedSat1 || !selectedSat2) {
-      setMatchingCdm(null);
-      return;
-    }
-    
-    // Find the CDM that involves both satellites
-    const match = cdms.find(
+  // The CDM involving both selected satellites, in either order.
+  const matchingCdm = useMemo(() => {
+    if (!selectedSat1 || !selectedSat2) return null;
+
+    return cdms.find(
       cdm => (cdm.sat1_object_designator === selectedSat1 && cdm.sat2_object_designator === selectedSat2) ||
              (cdm.sat1_object_designator === selectedSat2 && cdm.sat2_object_designator === selectedSat1)
-    ) || null;
-    
-    setMatchingCdm(match);
+    ) ?? null;
   }, [selectedSat1, selectedSat2, cdms]);
 
   // Handle form submission
@@ -172,7 +158,12 @@ export default function CesiumViewSelectionPage() {
               <div className="relative">
                 <select
                   value={selectedSat1}
-                  onChange={(e) => setSelectedSat1(e.target.value)}
+                  onChange={(e) => {
+                    setSelectedSat1(e.target.value);
+                    // Clearing here, in the event that causes the change, replaces
+                    // the setSelectedSat2("") that used to live in the effect above.
+                    setSelectedSat2("");
+                  }}
                   className="w-full p-3 border border-gray-300 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none"
                 >
                   <option value="">-- Select a satellite --</option>

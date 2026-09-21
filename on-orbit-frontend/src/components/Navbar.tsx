@@ -3,32 +3,46 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { useEffect, useState } from 'react';
+import { useSyncExternalStore } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { worksans } from '@/app/styles/font';
 import { ChartPie, Satellite, User } from 'lucide-react';
-import { clearTokens } from "@/lib/api";
+import {
+    clearTokens,
+    getAuthServerSnapshot,
+    getAuthSnapshot,
+    getUsernameSnapshot,
+    subscribeToAuth,
+} from "@/lib/api";
 
 export default function Navbar() {
-    const [isLoggedIn, setIsLoggedIn] = useState(false);
-    const [username, setUsername] = useState('');
     const router = useRouter();
     const pathname = usePathname();
 
-    useEffect(() => {
-        const token = localStorage.getItem('token');
-        const storedName = localStorage.getItem('username');
-        if (token) {
-            setIsLoggedIn(true);
-            if (storedName) setUsername(storedName);
-        }
-    }, []);
+    // Read straight from the auth store rather than copying localStorage into
+    // state on mount. The old effect ran once and never again, so the navbar
+    // kept showing a stale logged-in state after a session expired, and never
+    // reacted to a logout in another tab. The server snapshot is "logged out",
+    // so server and first client render agree and hydration stays clean.
+    const token = useSyncExternalStore(
+        subscribeToAuth,
+        getAuthSnapshot,
+        getAuthServerSnapshot,
+    );
+    const storedName = useSyncExternalStore(
+        subscribeToAuth,
+        getUsernameSnapshot,
+        () => null,
+    );
+    const isLoggedIn = token !== null;
+    const username = storedName ?? '';
 
     const handleLogout = () => {
         // Clears the refresh token too; leaving it behind meant a logged-out
         // browser still held a credential good for seven days.
         clearTokens();
-        setIsLoggedIn(false);
+        // No setIsLoggedIn here: clearTokens notifies the auth store and the
+        // subscription above re-renders this component.
         router.push('/');
     };
 

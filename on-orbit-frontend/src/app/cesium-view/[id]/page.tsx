@@ -53,7 +53,9 @@ export default function OrbitVisualizationPage() {
   const [simRunning, setSimRunning] = useState<boolean>(false);
 
   // Mutable refs (do not trigger re-renders)
-  const idRef = useRef<string>();
+  // React 19's useRef requires an explicit initial value; the untyped
+  // no-argument form no longer type-checks.
+  const idRef = useRef<string | undefined>(undefined);
   const rotationRef = useRef<[number, number, number]>([0, 0, 0]);
   const projectionRef = useRef<d3.GeoProjection | null>(null);
   const pathGeneratorRef = useRef<d3.GeoPath | null>(null);
@@ -374,43 +376,6 @@ export default function OrbitVisualizationPage() {
     fetchCdmAndTleData();
   }, [router]);
 
-  // Initialize D3 visualization (once available)
-  useEffect(() => {
-    if (
-      !svgRef.current ||
-      !worldData ||
-      !sat1Positions.length ||
-      !sat2Positions.length
-    )
-      return;
-
-    const container = d3.select(svgRef.current);
-    const width = svgRef.current.clientWidth;
-    const height = svgRef.current.clientHeight;
-    const scale = Math.min(width, height) / 2;
-
-    const projection = d3
-      .geoOrthographic()
-      .scale(scale * 0.9)
-      .translate([width / 2, height / 2])
-      .rotate(rotationRef.current);
-
-    projectionRef.current = projection;
-    pathGeneratorRef.current = d3.geoPath().projection(projection);
-
-    createBaseVisualization(container, width, height, scale);
-    setupDragBehavior(container);
-    updateVisualization();
-
-    return () => {
-      if (animationRef.current !== null) {
-        cancelAnimationFrame(animationRef.current);
-      }
-      if (simulationRef.current !== null) {
-        cancelAnimationFrame(simulationRef.current);
-      }
-    };
-  }, [worldData, sat1Positions, sat2Positions, tcaPositions.sat1, tcaPositions.sat2]);
 
   // Create base visualization elements
   const createBaseVisualization = (
@@ -923,6 +888,49 @@ export default function OrbitVisualizationPage() {
       }
     }
   };
+
+  // Declared after the helpers it calls (createBaseVisualization,
+  // setupDragBehavior, updateVisualization). Effects run after the whole
+  // component body has initialised, so referencing them earlier worked, but
+  // it read as a use-before-declaration and is one refactor away from a real
+  // temporal-dead-zone throw. Order among effects is unchanged.
+  // Initialize D3 visualization (once available)
+  useEffect(() => {
+    if (
+      !svgRef.current ||
+      !worldData ||
+      !sat1Positions.length ||
+      !sat2Positions.length
+    )
+      return;
+
+    const container = d3.select(svgRef.current);
+    const width = svgRef.current.clientWidth;
+    const height = svgRef.current.clientHeight;
+    const scale = Math.min(width, height) / 2;
+
+    const projection = d3
+      .geoOrthographic()
+      .scale(scale * 0.9)
+      .translate([width / 2, height / 2])
+      .rotate(rotationRef.current);
+
+    projectionRef.current = projection;
+    pathGeneratorRef.current = d3.geoPath().projection(projection);
+
+    createBaseVisualization(container, width, height, scale);
+    setupDragBehavior(container);
+    updateVisualization();
+
+    return () => {
+      if (animationRef.current !== null) {
+        cancelAnimationFrame(animationRef.current);
+      }
+      if (simulationRef.current !== null) {
+        cancelAnimationFrame(simulationRef.current);
+      }
+    };
+  }, [worldData, sat1Positions, sat2Positions, tcaPositions.sat1, tcaPositions.sat2]);
 
   // Automatic globe rotation animation
   useEffect(() => {

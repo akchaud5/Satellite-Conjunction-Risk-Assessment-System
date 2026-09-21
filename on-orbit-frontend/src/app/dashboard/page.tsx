@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import {
@@ -88,7 +88,6 @@ export default function Dashboard() {
   const [user, setUser] = useState<User | null>(null);
   const [cdms, setCdms] = useState<CDMWithCollision[]>([]);
   // This state will hold the final CDM IDs determined by the selected satellites.
-  const [selectedCdms, setSelectedCdms] = useState<number[]>([]);
   // State to track selected satellite designators (e.g., "SAT-001")
   const [selectedSatellites, setSelectedSatellites] = useState<string[]>([]);
   // For satellite search filtering
@@ -259,18 +258,22 @@ export default function Dashboard() {
   }, [user, router]);
 
   // ------------------------------------------------------------------
-  // Update selected CDM IDs whenever selected satellites or cdms change
+  // CDM IDs for the currently selected satellites. Derived entirely from
+  // state that already exists, so it is computed during render rather than
+  // mirrored into state from an effect, which cost an extra render pass on
+  // every filter change.
   // ------------------------------------------------------------------
-  useEffect(() => {
-    const newSelectedCdms = cdms
-      .filter(
-        (cdm) =>
-          selectedSatellites.includes(cdm.sat1_object_designator) ||
-          selectedSatellites.includes(cdm.sat2_object_designator)
-      )
-      .map((cdm) => cdm.id);
-    setSelectedCdms(newSelectedCdms);
-  }, [selectedSatellites, cdms]);
+  const selectedCdms = useMemo(
+    () =>
+      cdms
+        .filter(
+          (cdm) =>
+            selectedSatellites.includes(cdm.sat1_object_designator) ||
+            selectedSatellites.includes(cdm.sat2_object_designator)
+        )
+        .map((cdm) => cdm.id),
+    [selectedSatellites, cdms]
+  );
 
   // Handler for updating satellite selection (from the filter bar)
   const handleSatelliteCheckboxChange = (satellite: string, checked: boolean) => {

@@ -1,12 +1,59 @@
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap');
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+
+/* Tailwind 4 replaces the three @tailwind directives with a single import,
+   and moves configuration from tailwind.config.ts into this file. */
+@import "tailwindcss";
+@import "tw-animate-css";
+
+/* daisyUI 5 is loaded as a CSS plugin rather than a JS `plugins: []` entry. */
+@plugin "daisyui";
+
+/* Replaces `darkMode: ["class"]` from the old JS config. */
+@custom-variant dark (&:is(.dark *));
+
+/* Replaces theme.extend.colors / borderRadius from the old JS config. The
+   hsl() wrapper lives here so the :root variables below stay bare HSL triples,
+   exactly as before. */
+/* These tokens are prefixed --app-* because daisyUI 5 publishes variables of
+   its own under several of the bare names this theme used to use -- notably
+   --border, which daisyUI defines as a border *width* (1px). That collision
+   silently changed the resolved border colour. The prefix keeps the two
+   namespaces apart. */
+@theme inline {
+  --color-background: hsl(var(--app-background));
+  --color-foreground: hsl(var(--app-foreground));
+  --color-card: hsl(var(--app-card));
+  --color-card-foreground: hsl(var(--app-card-foreground));
+  --color-popover: hsl(var(--app-popover));
+  --color-popover-foreground: hsl(var(--app-popover-foreground));
+  --color-primary: hsl(var(--app-primary));
+  --color-primary-foreground: hsl(var(--app-primary-foreground));
+  --color-secondary: hsl(var(--app-secondary));
+  --color-secondary-foreground: hsl(var(--app-secondary-foreground));
+  --color-muted: hsl(var(--app-muted));
+  --color-muted-foreground: hsl(var(--app-muted-foreground));
+  --color-accent: hsl(var(--app-accent));
+  --color-accent-foreground: hsl(var(--app-accent-foreground));
+  --color-destructive: hsl(var(--app-destructive));
+  --color-destructive-foreground: hsl(var(--app-destructive-foreground));
+  --color-border: hsl(var(--app-border));
+  --color-input: hsl(var(--app-input));
+  --color-ring: hsl(var(--app-ring));
+  --color-chart-1: hsl(var(--app-chart-1));
+  --color-chart-2: hsl(var(--app-chart-2));
+  --color-chart-3: hsl(var(--app-chart-3));
+  --color-chart-4: hsl(var(--app-chart-4));
+  --color-chart-5: hsl(var(--app-chart-5));
+
+  --radius-lg: var(--app-radius);
+  --radius-md: calc(var(--app-radius) - 2px);
+  --radius-sm: calc(var(--app-radius) - 4px);
+}
 
 /* @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --app-background: #0a0a0a;
+    --app-foreground: #ededed;
   }
 } */
 
@@ -18,57 +65,57 @@ body {
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 354 85.4% 51.8%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
-    --chart-1: 12 76% 61%;
-    --chart-2: 173 58% 39%;
-    --chart-3: 197 37% 24%;
-    --chart-4: 43 74% 66%;
-    --chart-5: 27 87% 67%;
-    --radius: 0.5rem;
+    --app-background: 0 0% 100%;
+    --app-foreground: 222.2 84% 4.9%;
+    --app-card: 0 0% 100%;
+    --app-card-foreground: 222.2 84% 4.9%;
+    --app-popover: 0 0% 100%;
+    --app-popover-foreground: 222.2 84% 4.9%;
+    --app-primary: 354 85.4% 51.8%;
+    --app-primary-foreground: 210 40% 98%;
+    --app-secondary: 210 40% 96.1%;
+    --app-secondary-foreground: 222.2 47.4% 11.2%;
+    --app-muted: 210 40% 96.1%;
+    --app-muted-foreground: 215.4 16.3% 46.9%;
+    --app-accent: 210 40% 96.1%;
+    --app-accent-foreground: 222.2 47.4% 11.2%;
+    --app-destructive: 0 84.2% 60.2%;
+    --app-destructive-foreground: 210 40% 98%;
+    --app-border: 214.3 31.8% 91.4%;
+    --app-input: 214.3 31.8% 91.4%;
+    --app-ring: 222.2 84% 4.9%;
+    --app-chart-1: 12 76% 61%;
+    --app-chart-2: 173 58% 39%;
+    --app-chart-3: 197 37% 24%;
+    --app-chart-4: 43 74% 66%;
+    --app-chart-5: 27 87% 67%;
+    --app-radius: 0.5rem;
   }
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
+    --app-background: 222.2 84% 4.9%;
+    --app-foreground: 210 40% 98%;
+    --app-card: 222.2 84% 4.9%;
+    --app-card-foreground: 210 40% 98%;
+    --app-popover: 222.2 84% 4.9%;
+    --app-popover-foreground: 210 40% 98%;
+    --app-primary: 210 40% 98%;
+    --app-primary-foreground: 222.2 47.4% 11.2%;
+    --app-secondary: 217.2 32.6% 17.5%;
+    --app-secondary-foreground: 210 40% 98%;
+    --app-muted: 217.2 32.6% 17.5%;
+    --app-muted-foreground: 215 20.2% 65.1%;
+    --app-accent: 217.2 32.6% 17.5%;
+    --app-accent-foreground: 210 40% 98%;
+    --app-destructive: 0 62.8% 30.6%;
+    --app-destructive-foreground: 210 40% 98%;
+    --app-border: 217.2 32.6% 17.5%;
+    --app-input: 217.2 32.6% 17.5%;
+    --app-ring: 212.7 26.8% 83.9%;
+    --app-chart-1: 220 70% 50%;
+    --app-chart-2: 160 60% 45%;
+    --app-chart-3: 30 80% 55%;
+    --app-chart-4: 280 65% 60%;
+    --app-chart-5: 340 75% 55%;
   }
 }
 
