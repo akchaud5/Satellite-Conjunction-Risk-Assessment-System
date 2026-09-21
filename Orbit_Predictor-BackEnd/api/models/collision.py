@@ -1,7 +1,6 @@
-from pathlib import Path
 from django.db import models
 from .cdm import CDM
-import matlab.engine
+from ..matlab_runtime import get_matlab
 
 class Collision(models.Model):
     cdm = models.ForeignKey(CDM, on_delete=models.CASCADE, related_name='collisions')
@@ -13,10 +12,11 @@ class Collision(models.Model):
     def create_from_cdm(cls, cdm):
         if not cdm:
             raise ValueError("A valid CDM object must be provided.")
-        matlabPathFile = Path(__file__).resolve().parent.parent / 'matlab'
 
-        eng = matlab.engine.start_matlab()
-        eng.addpath(str(matlabPathFile))
+        # Imported and started on demand: an install without MATLAB can still
+        # serve every other endpoint. Raises MatlabUnavailable if absent.
+        matlab, eng = get_matlab()
+
         r1 = matlab.double([cdm.sat1_x, cdm.sat1_y, cdm.sat1_z])
         v1 = matlab.double([cdm.sat1_x_dot, cdm.sat1_y_dot, cdm.sat1_z_dot])
         cov1 = matlab.double([

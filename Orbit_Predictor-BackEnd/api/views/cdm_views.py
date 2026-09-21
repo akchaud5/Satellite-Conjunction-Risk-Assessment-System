@@ -10,6 +10,7 @@ from ..models import Collision
 from ..models import Organization
 from ..serializers import CDMSerializer
 from ..permissions import IsAdmin, CanViewCDM
+from ..matlab_runtime import MatlabUnavailable
 
 SPACE_AGENCY_MAP = {
     "asc-csa.gc.ca": "CSA",
@@ -88,6 +89,12 @@ class CDMCreateView(APIView):
 
     def post(self, request, *args, **kwargs):
         data = request.data
+
+        if not data.get('MESSAGE_ID'):
+            return Response(
+                {"error": "MESSAGE_ID is required."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
         # Create or update the CDM entry
         cdm, created = CDM.objects.update_or_create(
@@ -169,7 +176,22 @@ class CDMCreateView(APIView):
 
         # do we only want collision + email sending when the CDM data is new?
 
-        collision = Collision.create_from_cdm(cdm)
+        # The CDM itself is valid data and is worth keeping even where the
+        # analytic probability cannot be computed, so a missing MATLAB install
+        # degrades to "CDM stored, no Pc" rather than losing the upload.
+        try:
+            collision = Collision.create_from_cdm(cdm)
+        except MatlabUnavailable as exc:
+            return Response(
+                {
+                    "message": f"{action} CDM entry with MESSAGE_ID: {cdm.message_id}",
+                    "warning": (
+                        "Collision probability was not computed: "
+                        f"{exc}"
+                    ),
+                },
+                status=status.HTTP_201_CREATED if created else status.HTTP_200_OK
+            )
 
         user = self.request.user
         user_email = getattr(user, 'email', None)

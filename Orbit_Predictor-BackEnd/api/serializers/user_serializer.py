@@ -49,7 +49,13 @@ class UserSerializer(serializers.ModelSerializer):
             'created_at',
             'interested_cdms'   # NEW FIELD
         ]
-        read_only_fields = ['id', 'created_at']
+        # 'role' is read-only here. It used to be writable, which meant any
+        # authenticated user could PATCH their own record with
+        # {"role": "admin"} and escalate to administrator -- UserViewSet
+        # deliberately lets users edit themselves. Role is derived from the
+        # email domain and registration code on create (see create() below);
+        # administrators change it through AdminUserSerializer instead.
+        read_only_fields = ['id', 'created_at', 'role']
 
     def validate_registration_code(self, value):
         """
@@ -102,6 +108,45 @@ class UserSerializer(serializers.ModelSerializer):
         return super().update(instance, validated_data)
 
 
+class AdminUserSerializer(UserSerializer):
+    """UserSerializer with 'role' writable, for administrators only.
+
+    UserViewSet selects this serializer when the requesting user is an admin,
+    so role assignment stays an admin capability without exposing it to the
+    self-service update path.
+    """
+
+    class Meta(UserSerializer.Meta):
+        read_only_fields = ['id', 'created_at']
+
+    def validate_role(self, value):
+        valid = {choice[0] for choice in User.ROLE_CHOICES}
+        if value not in valid:
+            raise serializers.ValidationError(
+                f"Invalid role. Must be one of: {', '.join(sorted(valid))}."
+            )
+        return value
+
+
+def _issue_token(user, token_type, lifetime):
+    """Mint a signed JWT carrying an explicit token_type claim.
+
+    The token_type claim is what stops a refresh token being replayed as an
+    access token: JWTAuthentication only accepts type 'access', and the refresh
+    endpoint only accepts type 'refresh'. Without it both tokens were
+    interchangeable, silently giving every session a 7-day access lifetime.
+    """
+    now = datetime.datetime.now(datetime.timezone.utc)
+    payload = {
+        'user_id': str(user.id),
+        'role': user.role,
+        'token_type': token_type,
+        'exp': now + lifetime,
+        'iat': now,
+    }
+    return jwt.encode(payload, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
+
+
 class LoginSerializer(serializers.Serializer):
     email = serializers.EmailField()
     password = serializers.CharField(write_only=True)
@@ -121,28 +166,13 @@ class LoginSerializer(serializers.Serializer):
         if not user.check_password(password):
             raise serializers.ValidationError('Invalid credentials')
 
-        now = datetime.datetime.utcnow()
-
-        access_payload = {
-            'user_id': str(user.id),
-            'role': user.role,  # Include role in the payload
-            'exp': now + settings.JWT_ACCESS_EXPIRATION_DELTA,
-            'iat': now,
-        }
-
-        refresh_payload = {
-            'user_id': str(user.id),
-            'role': user.role,
-            'exp': now + settings.JWT_REFRESH_EXPIRATION_DELTA,
-            'iat': now,
-        }
-
-        access_token = jwt.encode(access_payload, settings.JWT_SECRET_KEY, algorithm='HS256')
-        refresh_token = jwt.encode(refresh_payload, settings.JWT_SECRET_KEY, algorithm='HS256')
-
         return {
-            'access': access_token,
-            'refresh_token': refresh_token,
+            'access': _issue_token(
+                user, 'access', settings.JWT_ACCESS_EXPIRATION_DELTA
+            ),
+            'refresh_token': _issue_token(
+                user, 'refresh', settings.JWT_REFRESH_EXPIRATION_DELTA
+            ),
         }
 
 
@@ -153,10 +183,17 @@ class RefreshTokenSerializer(serializers.Serializer):
         refresh_token = data.get('refresh_token')
 
         try:
-            payload = jwt.decode(refresh_token, settings.JWT_SECRET_KEY, algorithms=['HS256'])
+            payload = jwt.decode(
+                refresh_token,
+                settings.JWT_SECRET_KEY,
+                algorithms=[settings.JWT_ALGORITHM],
+            )
         except jwt.ExpiredSignatureError:
             raise serializers.ValidationError('Refresh token has expired.')
         except jwt.InvalidTokenError:
+            raise serializers.ValidationError('Invalid refresh token.')
+
+        if payload.get('token_type') != 'refresh':
             raise serializers.ValidationError('Invalid refresh token.')
 
         user_id = payload.get('user_id')
@@ -166,82 +203,8 @@ class RefreshTokenSerializer(serializers.Serializer):
         except User.DoesNotExist:
             raise serializers.ValidationError('User does not exist.')
 
-        now = datetime.datetime.utcnow()
-
-        new_access_payload = {
-            'user_id': str(user.id),
-            'role': user.role,
-            'exp': now + settings.JWT_ACCESS_EXPIRATION_DELTA,
-            'iat': now,
-        }
-
-        new_access_token = jwt.encode(new_access_payload, settings.JWT_SECRET_KEY, algorithm='HS256')
-
         return {
-            'access': new_access_token
+            'access': _issue_token(
+                user, 'access', settings.JWT_ACCESS_EXPIRATION_DELTA
+            )
         }
-
-
-class CDMSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = CDM
-        fields = [
-            'id',
-            'ccsds_cdm_version',
-            'creation_date',
-            'originator',
-            'message_id',
-            'privacy',
-            'tca',
-            'miss_distance',
-            # Satellite 1
-            'sat1_object',
-            'sat1_object_designator',
-            'sat1_maneuverable',
-            'sat1_x',
-            'sat1_y',
-            'sat1_z',
-            'sat1_x_dot',
-            'sat1_y_dot',
-            'sat1_z_dot',
-            'sat1_cov_rr',
-            'sat1_cov_rt',
-            'sat1_cov_rn',
-            'sat1_cov_tr',
-            'sat1_cov_tt',
-            'sat1_cov_tn',
-            'sat1_cov_nr',
-            'sat1_cov_nt',
-            'sat1_cov_nn',
-            # Satellite 2
-            'sat2_object',
-            'sat2_object_designator',
-            'sat2_maneuverable',
-            'sat2_x',
-            'sat2_y',
-            'sat2_z',
-            'sat2_x_dot',
-            'sat2_y_dot',
-            'sat2_z_dot',
-            'sat2_cov_rr',
-            'sat2_cov_rt',
-            'sat2_cov_rn',
-            'sat2_cov_tr',
-            'sat2_cov_tt',
-            'sat2_cov_tn',
-            'sat2_cov_nr',
-            'sat2_cov_nt',
-            'sat2_cov_nn',
-            'hard_body_radius',
-        ]
-        read_only_fields = ['id']
-
-    def create(self, validated_data):
-        return CDM.objects.create(**validated_data)
-
-    def update(self, instance, validated_data):
-        for field in self.Meta.fields:
-            if field != 'id':
-                setattr(instance, field, validated_data.get(field, getattr(instance, field)))
-        instance.save()
-        return instance

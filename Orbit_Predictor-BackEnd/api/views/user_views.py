@@ -4,10 +4,10 @@ from rest_framework.response import Response
 from rest_framework.permissions import AllowAny
 from ..permissions import IsAdmin, IsCollisionAnalyst, IsUser, CanViewCDM
 from ..serializers import (
-    UserSerializer, 
-    LoginSerializer, 
-    CDMSerializer, 
-    RefreshTokenSerializer
+    AdminUserSerializer,
+    UserSerializer,
+    LoginSerializer,
+    CDMSerializer,
 )
 from ..models import User, CDM
 from rest_framework.views import APIView
@@ -47,15 +47,8 @@ class LoginView(generics.GenericAPIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class RefreshTokenView(generics.GenericAPIView):
-    serializer_class = RefreshTokenSerializer
-    permission_classes = [AllowAny]
-
-    def post(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        if serializer.is_valid():
-            return Response(serializer.validated_data, status=status.HTTP_200_OK)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+# RefreshTokenView lives in refresh_token_views.py. An identical copy used to
+# sit here too; which one won depended on import order in views/__init__.py.
 
 
 class CDMViewSet(viewsets.ModelViewSet):
@@ -87,6 +80,13 @@ class UserViewSet(viewsets.ModelViewSet):
     serializer_class = UserSerializer
     permission_classes = [permissions.IsAuthenticated]
     queryset = User.objects.all()
+
+    def get_serializer_class(self):
+        """Only admins get the serializer with a writable 'role' field."""
+        user = self.request.user
+        if user and (user.is_staff or user.role == 'admin'):
+            return AdminUserSerializer
+        return UserSerializer
 
     def get_queryset(self):
         user = self.request.user

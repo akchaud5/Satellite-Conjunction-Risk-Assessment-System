@@ -46,27 +46,27 @@ class TleProxyView(APIView):
         
         for source in sources:
             try:
-                print(f"DEBUG: Attempting to fetch TLE data from {source['url']}")
-                print(f"DEBUG: Headers: {source['headers']}")
+                logger.debug(f"Attempting to fetch TLE data from {source['url']}")
+                logger.debug(f"Headers: {source['headers']}")
                 response = requests.get(
                     source["url"],
                     headers=source["headers"],
                     timeout=5  # 5 second timeout
                 )
                 
-                print(f"DEBUG: Response status: {response.status_code}")
-                print(f"DEBUG: Response headers: {response.headers}")
+                logger.debug(f"Response status: {response.status_code}")
+                logger.debug(f"Response headers: {response.headers}")
                 
                 if response.status_code == 200:
-                    print(f"DEBUG: Response content (first 200 chars): {response.text[:200]}")
+                    logger.debug(f"Response content (first 200 chars): {response.text[:200]}")
                     parsed_data = source["parser"](response)
                     if parsed_data:
-                        print(f"DEBUG: Successfully parsed data from {source['url']}")
-                        print(f"DEBUG: Parsed data: {parsed_data}")
+                        logger.debug(f"Successfully parsed data from {source['url']}")
+                        logger.debug(f"Parsed data: {parsed_data}")
                         return Response(parsed_data)
             
             except Exception as e:
-                print(f"DEBUG: Error fetching TLE data from {source['url']}: {str(e)}")
+                logger.debug(f"Error fetching TLE data from {source['url']}: {str(e)}")
                 # Specific handling for the NASA API which sometimes has connection issues
                 if "tle.ivanstanojevic.me" in source["url"]:
                     try:
@@ -80,7 +80,7 @@ class TleProxyView(APIView):
                             data = response.read().decode("utf-8")
                             # Check if it looks like valid JSON
                             if '{"@context":' in data and '"line1":' in data and '"line2":' in data:
-                                print(f"DEBUG: Successfully retrieved TLE data using urllib")
+                                logger.debug(f"Successfully retrieved TLE data using urllib")
                                 import json
                                 tle_data = json.loads(data)
                                 parsed_data = {
@@ -89,10 +89,10 @@ class TleProxyView(APIView):
                                     "line2": tle_data["line2"],
                                     "source": "nasa_api_direct"
                                 }
-                                print(f"DEBUG: Parsed NASA data: {parsed_data}")
+                                logger.debug(f"Parsed NASA data: {parsed_data}")
                                 return Response(parsed_data)
                     except Exception as inner_e:
-                        print(f"DEBUG: Secondary fetch attempt also failed: {str(inner_e)}")
+                        logger.debug(f"Secondary fetch attempt also failed: {str(inner_e)}")
                 
                 # Continue to next source if both attempts fail
                 continue

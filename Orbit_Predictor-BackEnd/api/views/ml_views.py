@@ -28,6 +28,7 @@ from ..ml.training import (
     train_risk_classifier,
     perform_hyperparameter_tuning
 )
+from ..ml.tasks import run_training
 
 
 class MLModelListCreateView(generics.ListCreateAPIView):
@@ -116,44 +117,41 @@ class TrainingJobListCreateView(generics.ListCreateAPIView):
             created_by=request.user
         )
         
-        # Queue the training task (in a real system, this would be an async celery task)
-        # For now, we'll run it synchronously
-        try:
-            if ml_model.model_type == 'collision_probability':
-                result = train_probability_model(
-                    training_job_id=training_job.id,
-                    algorithm=algorithm or ml_model.algorithm
-                )
-            elif ml_model.model_type == 'conjunction_risk':
-                result = train_risk_classifier(
-                    training_job_id=training_job.id,
-                    algorithm=algorithm or ml_model.algorithm
-                )
-            else:
-                return Response(
-                    {"error": f"Training for model type '{ml_model.model_type}' not implemented"},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-                
-            return Response({
-                "message": "Training job completed successfully",
-                "training_job_id": str(training_job.id),
-                "ml_model_id": str(ml_model.id),
-                "result": result
-            }, status=status.HTTP_201_CREATED)
-            
-        except Exception as e:
+        # Dispatch the fit to a background thread. Running it here blocked the
+        # worker for the whole fit -- minutes, or far longer with --tune -- and
+        # the client timed out well before it finished. Poll the returned job
+        # id at /api/ml/training/<id>/ for status and metrics.
+        trainers = {
+            'collision_probability': train_probability_model,
+            'conjunction_risk': train_risk_classifier,
+        }
+        trainer = trainers.get(ml_model.model_type)
+
+        if trainer is None:
             training_job.status = 'failed'
-            training_job.error_message = str(e)
+            training_job.error_message = (
+                f"Training for model type '{ml_model.model_type}' not implemented"
+            )
             training_job.save()
-            
             ml_model.status = 'failed'
             ml_model.save()
-            
             return Response(
-                {"error": f"Training failed: {str(e)}"},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                {"error": f"Training for model type '{ml_model.model_type}' not implemented"},
+                status=status.HTTP_400_BAD_REQUEST
             )
+
+        run_training(
+            trainer,
+            training_job_id=training_job.id,
+            algorithm=algorithm or ml_model.algorithm,
+        )
+
+        return Response({
+            "message": "Training job accepted and running in the background.",
+            "training_job_id": str(training_job.id),
+            "ml_model_id": str(ml_model.id),
+            "status_url": f"/api/ml/training/{training_job.id}/",
+        }, status=status.HTTP_202_ACCEPTED)
 
 
 class TrainingJobDetailView(generics.RetrieveAPIView):

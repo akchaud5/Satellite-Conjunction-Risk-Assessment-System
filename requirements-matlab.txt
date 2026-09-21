@@ -1,0 +1,12 @@
+# Optional: MATLAB Engine for Python, required only for the analytic
+# (Pc2D_Foster / Pc3D_Hall) collision-probability endpoints.
+#
+# The engine must match your installed MATLAB release and supports Python
+# 3.9-3.12 only. Install it from your own MATLAB installation:
+#
+#   macOS:   cd /Applications/MATLAB_R2024b.app/extern/engines/python && pip install .
+#   Linux:   cd /usr/local/MATLAB/R2024b/extern/engines/python && pip install .
+#   Windows: cd "C:\Program Files\MATLAB\R2024b\extern\engines\python" && pip install .
+#
+# Or, for R2023b and later, from PyPI with a version matching your release:
+matlabengine~=24.2

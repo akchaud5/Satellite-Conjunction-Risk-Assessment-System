@@ -1,8 +1,7 @@
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 from api.models import CDM
-from datetime import datetime, timedelta
-import pytz
+from datetime import datetime, timedelta, timezone as dt_timezone
 
 
 class Command(BaseCommand):
@@ -34,7 +33,7 @@ class Command(BaseCommand):
         if options['reference_date']:
             try:
                 reference_date = datetime.strptime(options['reference_date'], '%Y-%m-%d')
-                reference_date = pytz.UTC.localize(reference_date)
+                reference_date = reference_date.replace(tzinfo=dt_timezone.utc)
             except ValueError:
                 self.stdout.write(self.style.ERROR("Invalid date format. Use YYYY-MM-DD."))
                 return

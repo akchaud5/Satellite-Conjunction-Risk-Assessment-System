@@ -8,6 +8,7 @@ for satellite collision probability prediction.
 import os
 import uuid
 import pickle
+from django.core.exceptions import SuspiciousFileOperation
 from django.db import models
 from django.conf import settings
 from .cdm import CDM
@@ -83,21 +84,49 @@ class MLModel(models.Model):
         # Save the model to disk using pickle
         with open(filepath, 'wb') as f:
             pickle.dump(model_object, f)
-        
-        # Update the file_path field and save
-        self.file_path = filepath
+
+        # Store the bare filename, not the absolute path. The column used to
+        # hold an absolute path, which meant model rows stopped resolving the
+        # moment the app moved to another machine or container.
+        self.file_path = filename
         self.save()
-        
+
         return filepath
     
+    def resolved_model_path(self):
+        """Return the on-disk path for this model, confined to ML_MODELS_DIR.
+
+        file_path is a database column, and unpickling executes arbitrary code
+        in the file it is handed. Anything that can write that column could
+        otherwise point it at a file of its own choosing anywhere on the host.
+        Resolving it against ML_MODELS_DIR and rejecting escapes keeps
+        deserialization inside the directory this app controls.
+
+        Rows written before this check may hold an absolute path from a
+        developer's machine, so only the basename is honoured.
+        """
+        if not self.file_path:
+            raise FileNotFoundError("This model has no stored file.")
+
+        models_dir = os.path.realpath(ML_MODELS_DIR)
+        candidate = os.path.realpath(
+            os.path.join(models_dir, os.path.basename(self.file_path))
+        )
+
+        if os.path.commonpath([models_dir, candidate]) != models_dir:
+            raise SuspiciousFileOperation(
+                f"Refusing to load a model from outside {models_dir}."
+            )
+        if not os.path.exists(candidate):
+            raise FileNotFoundError(f"Model file not found at {candidate}")
+
+        return candidate
+
     def load_model(self):
-        """Load the model from disk"""
-        if not self.file_path or not os.path.exists(self.file_path):
-            raise FileNotFoundError(f"Model file not found at {self.file_path}")
-        
-        with open(self.file_path, 'rb') as f:
+        """Load the model from disk."""
+        with open(self.resolved_model_path(), 'rb') as f:
             model = pickle.load(f)
-        
+
         return model
 
 

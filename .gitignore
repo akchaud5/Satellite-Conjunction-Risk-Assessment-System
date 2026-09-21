@@ -14,4 +14,9 @@ node_modules
 .env
 check_active_satellites.py
 install_matlab_engine.py
-*.pyc
+*.pyc.venv/
+venv/
+py312_venv/
+staticfiles/
+*.pkl
+Orbit_Predictor-BackEnd/.env.postgres

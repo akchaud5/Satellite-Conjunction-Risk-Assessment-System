@@ -10,6 +10,8 @@ import json
 import numpy as np
 import pandas as pd
 from datetime import datetime
+
+from django.utils import timezone
 import joblib
 import pickle
 
@@ -65,7 +67,7 @@ def train_probability_model(
     
     # Update job status
     training_job.status = 'running'
-    training_job.started_at = datetime.now()
+    training_job.started_at = timezone.now()
     training_job.save()
     
     try:
@@ -169,7 +171,7 @@ def train_probability_model(
             'max_vals': max_vals,
             'metadata': {
                 'algorithm': algorithm,
-                'training_date': datetime.now().isoformat(),
+                'training_date': timezone.now().isoformat(),
                 'metrics': {
                     'mae': mae,
                     'rmse': rmse,
@@ -192,7 +194,7 @@ def train_probability_model(
         
         # Update training job
         training_job.status = 'completed'
-        training_job.completed_at = datetime.now()
+        training_job.completed_at = timezone.now()
         training_job.training_data_count = len(X_train)
         training_job.validation_data_count = len(X_test)
         training_job.log_output += f"""
@@ -223,7 +225,7 @@ Top important features:
         if training_job:
             training_job.status = 'failed'
             training_job.error_message = str(e)
-            training_job.completed_at = datetime.now()
+            training_job.completed_at = timezone.now()
             training_job.save()
             
         if ml_model:
@@ -264,7 +266,7 @@ def train_risk_classifier(
     
     # Update job status
     training_job.status = 'running'
-    training_job.started_at = datetime.now()
+    training_job.started_at = timezone.now()
     training_job.save()
     
     try:
@@ -394,7 +396,7 @@ def train_risk_classifier(
             'threshold': threshold,
             'metadata': {
                 'algorithm': algorithm,
-                'training_date': datetime.now().isoformat(),
+                'training_date': timezone.now().isoformat(),
                 'metrics': {
                     'accuracy': accuracy,
                     'precision': precision,
@@ -424,7 +426,7 @@ def train_risk_classifier(
         
         # Update training job
         training_job.status = 'completed'
-        training_job.completed_at = datetime.now()
+        training_job.completed_at = timezone.now()
         training_job.training_data_count = len(X_train)
         training_job.validation_data_count = len(X_test)
         # Prepare log output with safer string formatting
@@ -471,7 +473,7 @@ def train_risk_classifier(
         if training_job:
             training_job.status = 'failed'
             training_job.error_message = str(e)
-            training_job.completed_at = datetime.now()
+            training_job.completed_at = timezone.now()
             training_job.save()
             
         if ml_model:
@@ -516,7 +518,7 @@ def perform_hyperparameter_tuning(
     
     # Update job status
     training_job.status = 'running'
-    training_job.started_at = datetime.now()
+    training_job.started_at = timezone.now()
     training_job.save()
     
     try:
@@ -715,7 +717,7 @@ def perform_hyperparameter_tuning(
             'max_vals': max_vals,
             'metadata': {
                 'algorithm': algorithm,
-                'training_date': datetime.now().isoformat(),
+                'training_date': timezone.now().isoformat(),
                 'metrics': metrics,
                 'hyperparameters': best_model.get_params(),
                 'feature_importances': feature_importances,
@@ -747,7 +749,7 @@ def perform_hyperparameter_tuning(
         
         # Update training job
         training_job.status = 'completed'
-        training_job.completed_at = datetime.now()
+        training_job.completed_at = timezone.now()
         training_job.training_data_count = len(X_train)
         training_job.validation_data_count = len(X_test)
         
@@ -796,7 +798,7 @@ Top important features:
         if training_job:
             training_job.status = 'failed'
             training_job.error_message = str(e)
-            training_job.completed_at = datetime.now()
+            training_job.completed_at = timezone.now()
             training_job.save()
             
         if ml_model:

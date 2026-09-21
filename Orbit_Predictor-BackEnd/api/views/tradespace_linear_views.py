@@ -1,12 +1,11 @@
 import numpy as np
-import matlab.engine
-from pathlib import Path
 from django.shortcuts import get_object_or_404
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 
 from ..models import CDM, Collision
+from ..matlab_runtime import MatlabUnavailable, get_matlab
 
 class CollisionLinearTradespaceView(APIView):
     """
@@ -59,10 +58,15 @@ class CollisionLinearTradespaceView(APIView):
         RelTol = 1e-8
         HBRType = 'circle'
 
-        # Start MATLAB engine and add MATLAB scripts path
-        eng = matlab.engine.start_matlab()
-        matlab_path = Path(__file__).resolve().parent.parent / "matlab"
-        eng.addpath(str(matlab_path))
+        # Imported and started on demand, and reused across requests, so an
+        # install without MATLAB can still serve every other endpoint.
+        try:
+            matlab, eng = get_matlab()
+        except MatlabUnavailable as exc:
+            return Response(
+                {"error": str(exc)},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
 
         # Helper: Compute collision probability via MATLAB
         def compute_pc(r1, v1):

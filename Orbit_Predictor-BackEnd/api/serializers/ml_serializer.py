@@ -19,9 +19,13 @@ class MLModelSerializer(serializers.ModelSerializer):
             'accuracy', 'precision', 'recall', 'f1_score', 'mae', 'rmse',
             'training_parameters', 'feature_columns'
         ]
+        # file_path is read-only: load_model() unpickles whatever it points
+        # at, so letting an API client set it would turn a model update into
+        # arbitrary-file deserialization. It is written by save_model_file()
+        # during training and nowhere else.
         read_only_fields = [
             'id', 'created_at', 'updated_at', 'accuracy', 'precision',
-            'recall', 'f1_score', 'mae', 'rmse'
+            'recall', 'f1_score', 'mae', 'rmse', 'file_path'
         ]
 
 
